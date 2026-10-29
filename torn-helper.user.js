@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.66
+// @version      1.5.67
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.66', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.67', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3759,12 +3759,33 @@
     if (!h && !m && !c) return 0;
     return Date.now() + (((h ? +h[1] : 0) * 3600) + ((m ? +m[1] : 0) * 60) + (c ? +c[1] : 0)) * 1000;
   }
+  function rcSet(e) { if (!e) return false; var rr = gmGet('sb-race', null) || {}; if (!rr.end || Math.abs(rr.end - e) > 3000) gmSet('sb-race', { end: e, done: false }); sbXRender(); return true; }
+  /* Yedek yol: ikonun üstüne görünmez şekilde gelip Torn'un tooltip'inden süreyi oku */
+  function rcHover(ic) {
+    if (!ic) return;
+    var st = document.createElement('style'); st.id = 'th-rc-hide';
+    st.textContent = '[class*="tooltip"],[role="tooltip"]{visibility:hidden !important;}';
+    document.head.appendChild(st);
+    var ev = function (n) { try { ic.dispatchEvent(new MouseEvent(n, { bubbles: true, cancelable: true, view: window })); } catch (e) {} };
+    ev('pointerover'); ev('mouseover'); ev('mouseenter'); ev('mousemove');
+    setTimeout(function () {
+      var found = 0, els = document.querySelectorAll('[class*="tooltip"],[role="tooltip"]');
+      for (var i = 0; i < els.length && !found; i++) {
+        var tx = String(els[i].textContent || '');
+        if (/Waiting for a race|Racing/i.test(tx) && /(second|minute|hour)/i.test(tx) && tx.length < 300) found = rcParse(tx);
+      }
+      ev('mouseout'); ev('mouseleave'); ev('pointerout');
+      setTimeout(function () { var h = document.getElementById('th-rc-hide'); if (h) h.remove(); }, 200);
+      rcSet(found);
+    }, 450);
+  }
   function rcFetch() {
     rcLast = Date.now();
     fetch('/page.php?sid=racing', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
       var d = new DOMParser().parseFromString(t, 'text/html'), sp = d.getElementById('infoSpot'), e = sp ? rcParse(sp.textContent) : 0;
-      if (e) { var rr = gmGet('sb-race', null) || {}; if (!rr.end || Math.abs(rr.end - e) > 3000) gmSet('sb-race', { end: e, done: false }); sbXRender(); }
-    }).catch(function () {});
+      if (!e) { var m = /laps\s*-\s*(?:<[^>]*>\s*)*([^<]*(?:second|minute|hour)[^<]*)/i.exec(t); if (m) e = rcParse(m[1]); }
+      if (!rcSet(e)) rcHover(document.querySelectorAll('[class*="statusIcons___"] [class*="icon17___"] a')[0]);
+    }).catch(function () { rcHover(document.querySelectorAll('[class*="statusIcons___"] [class*="icon17___"] a')[0]); });
   }
   function sbXRender() {
     var d = gmGet('sb-x', null) || {}, now = Date.now(), chain = document.querySelectorAll('[class*="chainBar___"]')[0], box = document.getElementById('th-x');
