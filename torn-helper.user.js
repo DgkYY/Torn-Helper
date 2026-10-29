@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.33
+// @version      1.5.34
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2712,7 +2712,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.33', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.34', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -2942,7 +2942,7 @@
     }).catch(function () {});
   }
   /* Retal: faction üyesine saldıran, avlanabilir durumdaysa düğmenin altında göster */
-  var retalBusy = false, RETAL_MS = 1800000;
+  var retalBusy = false, RETAL_MS = 300000;
   function gmGet(k, d) { try { var v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } }
   function gmSet(k, v) { try { GM_setValue(k, v); } catch (e) {} }
   function rateTake() {
