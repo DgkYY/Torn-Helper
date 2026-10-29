@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.72
+// @version      1.5.73
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.72', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.73', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4257,7 +4257,8 @@
       } catch (e) { fcxSame = false; }
       fcxBusy = false;
     }
-    var btn = document.querySelectorAll('a[class*="profile-button-attack"], a[href*="sid=attack"]')[0];
+    var btn = document.querySelectorAll('.profile-buttons a[class*="profile-button-attack"], a[class*="profile-button-attack"]')[0];
+    for (var oz = 0; oz < old.length; oz++) if (!btn || old[oz].parentNode !== btn) old[oz].remove();
     if (!btn) return;
     var mark = btn.querySelectorAll('.th-fcx')[0];
     if (!fcxSame) { if (mark) mark.remove(); return; }
