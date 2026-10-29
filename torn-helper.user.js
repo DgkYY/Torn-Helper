@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.3
+// @version      1.6.4
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.3', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.4', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4740,7 +4740,7 @@
   /* Şirket: Stock Shipments formunu hedef güne göre otomatik doldur */
   function cstNum(t) { return Number(String(t || '').replace(/[^\d]/g, '')) || 0; }
   function cstFire(el) { ['input', 'keyup', 'change', 'blur'].forEach(function (n) { try { el.dispatchEvent(new Event(n, { bubbles: true })); } catch (e) {} }); }
-  function cstFill(form, days, clear) {
+  function cstFill(form, days, clear, all) {
     var lis = form.querySelectorAll('ul.stock-list > li'), items = [], sumNeed = 0, stockTot = 0, cap = 0;
     var scope = form.parentNode ? form.parentNode.textContent : '', cm = /Storage capacity:\s*([\d,]+)\s*\/\s*([\d,]+)/i.exec(scope);
     for (var i = 0; i < lis.length; i++) {
@@ -4748,16 +4748,22 @@
       if (!vis) continue;
       var stock = st ? cstNum(String(st.textContent).replace(/In Stock:?/i, '')) : 0, sold = sd ? cstNum(String(sd.textContent).replace(/Sold Daily:?/i, '')) : 0;
       var need = clear ? 0 : Math.max(0, Math.ceil(sold * days - stock));
-      items.push({ vis: vis, hid: hid, need: need }); sumNeed += need; stockTot += stock;
+      items.push({ vis: vis, hid: hid, need: need, stock: stock, sold: sold }); sumNeed += need; stockTot += stock;
     }
     cap = cm ? cstNum(cm[2]) : 0;
-    var free = cm ? Math.max(0, cap - cstNum(cm[1])) : Infinity, ratio = sumNeed > free ? free / sumNeed : 1;
+    var free = cap ? Math.max(0, cap - stockTot) : Infinity, ratio = sumNeed > free ? free / sumNeed : 1;
+    if (all && cap && !clear) {
+      var lo = 0, hi = 100000, need2 = function (D) { var t = 0; items.forEach(function (it) { t += Math.max(0, Math.ceil(it.sold * D - it.stock)); }); return t; };
+      for (var bi = 0; bi < 60; bi++) { var mid = (lo + hi) / 2; if (need2(mid) > free) hi = mid; else lo = mid; }
+      items.forEach(function (it) { it.need = Math.max(0, Math.floor(it.sold * lo - it.stock)); });
+      ratio = 1; sumNeed = need2(lo); days = lo;
+    }
     items.forEach(function (it) {
       var q = Math.floor(it.need * ratio), v = q > 0 ? String(q) : '';
       it.vis.value = v; if (it.hid) it.hid.value = v;
       cstFire(it.vis);
     });
-    return { sumNeed: sumNeed, free: free, ratio: ratio, n: items.length };
+    return { sumNeed: sumNeed, free: free, ratio: ratio, n: items.length, days: days, cap: cap };
   }
   function cstTick() {
     var panel = document.getElementById('th-cst'), form = document.querySelectorAll('form[action*="step=stock1"]')[0];
@@ -4770,18 +4776,20 @@
     var d = Number(gmGet('cst-days', 2)) || 2;
     panel.innerHTML = '<b>' + T('Otomatik sipariş', 'Auto order') + '</b><span>' + T('Hedef stok (gün):', 'Target stock (days):') + ' <input type="text" data-d="1" value="' + d + '" style="width:44px;padding:1px 4px;background:#111827;color:#e5e7eb;border:1px solid #4b5563;border-radius:3px;"></span>'
       + '<button type="button" data-go="1" style="padding:3px 10px;border:0;border-radius:4px;background:#2563eb;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Doldur', 'Fill') + '</button>'
+      + '<button type="button" data-all="1" style="padding:3px 10px;border:0;border-radius:4px;background:#047857;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Depoyu doldur', 'Fill storage') + '</button>'
       + '<button type="button" data-clr="1" style="padding:3px 10px;border:0;border-radius:4px;background:#4b5563;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Temizle', 'Clear') + '</button><span id="th-cstm" style="color:#9ca3af;"></span>';
     form.insertBefore(panel, wrap);
     panel.addEventListener('click', function (ev) {
       var t = ev.target; if (!t || !t.getAttribute) return;
-      var go = t.getAttribute('data-go'), clr = t.getAttribute('data-clr');
-      if (!go && !clr) return;
+      var go = t.getAttribute('data-go'), clr = t.getAttribute('data-clr'), all = t.getAttribute('data-all');
+      if (!go && !clr && !all) return;
       ev.preventDefault(); ev.stopPropagation();
       var dd = Number(String(panel.querySelector('input[data-d]').value).replace(',', '.')) || 0;
       if (go && dd <= 0) { document.getElementById('th-cstm').textContent = T('Gün sayısı gir', 'Enter days'); return; }
       if (go) gmSet('cst-days', dd);
-      var r = cstFill(form, dd, !!clr), m = document.getElementById('th-cstm');
-      if (m) m.textContent = clr ? T('Temizlendi', 'Cleared') : r.ratio < 1 ? T('Depo dolu olacağı için sipariş %' + Math.round(r.ratio * 100) + ' oranında kısıldı', 'Order scaled to ' + Math.round(r.ratio * 100) + '% to fit storage') : T(r.n + ' ürün dolduruldu', r.n + ' items filled');
+      var r = cstFill(form, dd, !!clr, !!all), m = document.getElementById('th-cstm');
+      if (all && !r.cap) { m.textContent = T('Depo kapasitesi sayfada bulunamadı', 'Storage capacity not found on the page'); return; }
+      if (m) m.textContent = clr ? T('Temizlendi', 'Cleared') : all ? T('Depo dolduruldu: her ürün yaklaşık ' + r.days.toFixed(1) + ' günlük stoğa getirildi', 'Storage filled: every item brought to about ' + r.days.toFixed(1) + ' days of stock') : r.ratio < 1 ? T('Depo dolu olacağı için sipariş %' + Math.round(r.ratio * 100) + ' oranında kısıldı', 'Order scaled to ' + Math.round(r.ratio * 100) + '% to fit storage') : T(r.n + ' ürün dolduruldu', r.n + ' items filled');
     });
   }
   setInterval(cstTick, 1000);
