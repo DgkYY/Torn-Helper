@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.13
+// @version      1.6.14
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.13', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.14', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4704,10 +4704,10 @@
     var pn = document.getElementById('th-mtp');
     if (pn) { pn.remove(); return; }
     pn = document.createElement('div'); pn.id = 'th-mtp';
-    var r = a.getBoundingClientRect();
-    pn.style.cssText = 'position:fixed;z-index:2147483000;top:' + Math.max(8, Math.round(Math.min(r.top, window.innerHeight - 380))) + 'px;left:' + Math.round(r.right + 8) + 'px;width:300px;max-height:360px;overflow:auto;padding:10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;box-shadow:0 4px 14px rgba(0,0,0,.6);';
+    var hostm = document.querySelectorAll('[class*="userInformation___"]')[0], r = a.getBoundingClientRect();
+    pn.style.cssText = hostm ? 'box-sizing:border-box;width:100%;margin-top:6px;max-height:420px;overflow:auto;padding:8px;background:#1f2937;border:1px solid #4b5563;border-radius:4px;font:12px Arial,sans-serif;color:#e5e7eb;' : 'position:fixed;z-index:2147483000;top:' + Math.max(8, Math.round(Math.min(r.top, window.innerHeight - 380))) + 'px;left:' + Math.round(r.right + 8) + 'px;width:300px;max-height:360px;overflow:auto;padding:10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;box-shadow:0 4px 14px rgba(0,0,0,.6);';
     pn.textContent = T('Yükleniyor…', 'Loading…');
-    document.body.appendChild(pn);
+    if (hostm) { var bxm = document.getElementById('th-sbx2'), am = document.getElementById('th-mta'), ref = am && am.parentNode === hostm ? am : (bxm && bxm.parentNode === hostm ? bxm : null); hostm.insertBefore(pn, ref ? ref.nextSibling : null); } else document.body.appendChild(pn);
     var c = gmGet('merits', null), j = null;
     try {
       if (c && c.d && Date.now() - c.at < 600000) j = c.d;
@@ -4792,8 +4792,39 @@
     if (host) { var bx2 = document.getElementById('th-sbx2'); if (bx2 && bx2.parentNode === host) host.insertBefore(pn, bx2.nextSibling); else host.appendChild(pn); } else document.body.appendChild(pn);
   }
   setInterval(mtAutoTick, 1200);
-  function mtAwScrape() {
-    var lis = document.querySelectorAll('li[class*="locked___"]'), mds = document.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length) return;
+  /* Awards sayfasını gizli iframe'de gezip tüm honor/medal ilerlemesini otomatik topla */
+  var mtFullBusy = false;
+  function mtSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function mtFullScan() {
+    if (mtFullBusy || !ui.mtr) return;
+    var c = gmGet('merit-aw', null);
+    if (c && c.full && Date.now() - c.full < 6 * 3600000) return;
+    var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000) return;
+    gmSet('merit-aw-try', Date.now());
+    mtFullBusy = true;
+    var fr = document.createElement('iframe');
+    fr.src = 'https://www.torn.com/page.php?sid=awards'; fr.setAttribute('aria-hidden', 'true');
+    fr.style.cssText = 'position:fixed;left:-3000px;top:0;width:1100px;height:900px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(fr);
+    try {
+      var d = null;
+      for (var i = 0; i < 40; i++) { await mtSleep(500); try { d = fr.contentDocument; } catch (e) { d = null; } if (d && d.querySelector('li.category___LoV45, li[class*="category___"]')) break; d = null; }
+      if (!d) throw new Error('no awards page');
+      var tabs = ['honors', 'medals'];
+      for (var t = 0; t < tabs.length; t++) {
+        var tb = d.querySelector('li#' + tabs[t] + '[role="tab"]'); if (tb) { tb.click(); await mtSleep(900); }
+        var pnl = d.getElementById(tabs[t] + '-panel') || d, cats = pnl.querySelectorAll('li[class*="category___"]');
+        mtAwScrape(d);
+        for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); }
+      }
+      var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
+    } catch (e) { /* sessizce vazgeç */ }
+    fr.remove(); mtFullBusy = false; mtLast = '';
+  }
+  setTimeout(function () { mtFullScan(); setInterval(mtFullScan, 600000); }, 8000);
+  function mtAwScrape(doc) {
+    doc = doc || document;
+    var lis = doc.querySelectorAll('li[class*="locked___"]'), mds = doc.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length) return;
     var c = gmGet('merit-aw', null) || { d: {} }, ch = false;
     mds.forEach(function (li) {
       var pp = li.querySelector('p[class*="progress___"]'), mm = pp && /([\d,\.]+)\s*\/\s*([\d,\.]+)/.exec(pp.textContent), ti = li.querySelector('[class*="title___"]'), ds = li.querySelector('[class*="description___"]');
@@ -4936,7 +4967,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.13';
+  var TH_VER = '1.6.14';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -4957,7 +4988,8 @@
     ['1.6.10', 'o', ['Merit Tracker: upgrade isimleri ve seviyeleri (Life 4 / 10 gibi), boşta ve harcanan merit. Merits sayfasını bir kez açman yeter.'], ['Merit Tracker: upgrade names and levels (e.g. Life 4 / 10), available and used merits. Open the Merits page once.']],
     ['1.6.11', 'o', ['Merit Tracker: Awards sayfasında açtığın honor ve medalların ilerlemesinden "kazanmaya en yakın ödüller" listesi.'], ['Merit Tracker: "closest awards" list built from the honors and medals progress on the Awards page you opened.']],
     ['1.6.12', 'o', ['Merit Tracker: en üstte merit kazanmaya en yakın ödüller, upgrade seviyeleri açılır bölüme alındı; koyu satır yazıları düzeltildi.'], ['Merit Tracker: closest awards first, upgrade levels moved into a collapsible section; dark row text fixed.']],
-    ['1.6.13', 'o', ['Merit Tracker: uçuş, saldırı, gym, crimes gibi sayfalara girince o sayfayla ilgili ödüllerin (örn. Güney Afrika için uçarken Travel ödüllerinin) ilerlemesi kenar çubuğunda, Bağlantılar bölümünün altında otomatik açılır. Kapatmak için ayarlardaki yeni kutuyu kaldır.'], ['Merit Tracker: on pages like travel, attack, gym and crimes, a small popup automatically shows progress of the awards related to that page (e.g. Travel awards when flying to South Africa). Untick the new setting to turn it off.']]
+    ['1.6.13', 'o', ['Merit Tracker: uçuş, saldırı, gym, crimes gibi sayfalara girince o sayfayla ilgili ödüllerin (örn. Güney Afrika için uçarken Travel ödüllerinin) ilerlemesi kenar çubuğunda, Bağlantılar bölümünün altında otomatik açılır. Kapatmak için ayarlardaki yeni kutuyu kaldır.'], ['Merit Tracker: on pages like travel, attack, gym and crimes, a small popup automatically shows progress of the awards related to that page (e.g. Travel awards when flying to South Africa). Untick the new setting to turn it off.']],
+    ['1.6.14', 'o', ['Merit Tracker: ödül ilerlemesi artık Awards sayfasını elle gezmeden otomatik toplanıyor (arka planda, 6 saatte bir); popup kenar çubuğunda Bağlantılar\u0027ın altında açılıyor.'], ['Merit Tracker: award progress is now collected automatically in the background (every 6 hours) without visiting the Awards page; the popup opens in the sidebar under Links.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
