@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.5
+// @version      1.6.6
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.5', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.6', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4153,9 +4153,10 @@
       wrap.parentNode.insertBefore(box, wrap.nextSibling);
       box.addEventListener('change', function (ev) {
         var el = ev.target;
-        if (el && (el.getAttribute('data-gc') || el.getAttribute('data-r'))) {
+        if (el && (el.getAttribute('data-gc') || el.getAttribute('data-r') || el.getAttribute('data-gp') != null)) {
           var gc = gmGet('gym-ratio', { on: false, r: [1, 1, 1, 1] }) || { on: false, r: [1, 1, 1, 1] };
           if (el.getAttribute('data-gc')) gc.on = !!el.checked;
+          else if (el.getAttribute('data-gp') != null) gc.p = el.value;
           else { var ri = Number(el.getAttribute('data-r')), rv = Number(String(el.value).replace(',', '.')); if (rv >= 0) gc.r[ri] = rv; }
           gmSet('gym-ratio', gc); gysSig = ''; gysTick(); return;
         }
@@ -4180,7 +4181,8 @@
     if (!chosen.length) h += '<div style="color:#9ca3af;">' + T('Kullanmak istediğin gymleri işaretle.', 'Tick the gyms you want to use.') + '</div>';
     var gc2 = gmGet('gym-ratio', { on: false, r: [1, 1, 1, 1] }) || { on: false, r: [1, 1, 1, 1] }, rn = ['Str', 'Def', 'Spd', 'Dex'];
     h += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #4b5563;"><label style="cursor:pointer;font-weight:700;"><input type="checkbox" data-gc="1"' + (gc2.on ? ' checked' : '') + '> ' + T('Gym Coach: hedef oran', 'Gym Coach: target ratio') + '</label>';
-    h += '<span style="margin-left:10px;">';
+    h += ' <select data-gp="1" style="margin-left:8px;background:#111827;color:#e5e7eb;border:1px solid #4b5563;border-radius:3px;"><option value=""' + (!gc2.p ? ' selected' : '') + '>' + T('Özel oran', 'Custom ratio') + '</option><option value="baldr"' + (gc2.p === 'baldr' ? ' selected' : '') + '>Baldr\'s Ratio</option><option value="hank"' + (gc2.p === 'hank' ? ' selected' : '') + '>Hank\'s Ratio</option></select>';
+    h += '<span style="margin-left:10px;' + (gc2.p ? 'opacity:.4;' : '') + '">';
     rn.forEach(function (n, i) { h += n + ' <input type="text" data-r="' + i + '" value="' + (gc2.r[i] != null ? gc2.r[i] : 1) + '" style="width:44px;margin:0 8px 0 2px;padding:1px 3px;background:#111827;color:#e5e7eb;border:1px solid #4b5563;border-radius:3px;">'; });
     h += '</span><div id="th-gcmsg" style="margin-top:4px;color:#86efac;font-weight:700;"></div></div>';
     box.innerHTML = h;
@@ -4190,7 +4192,24 @@
     var gc = gmGet('gym-ratio', { on: false, r: [1, 1, 1, 1] }) || { on: false }, lis = document.querySelectorAll('#gymroot ul[class*="properties___"] > li'), st = gysStats(), msg = document.getElementById('th-gcmsg');
     for (var i = 0; i < lis.length; i++) { lis[i].style.boxShadow = ''; }
     if (!ui.gys || !gc.on || !st || !/\/gym\.php/i.test(location.pathname)) { if (msg) msg.textContent = ''; return; }
-    var order = ['strength', 'defense', 'speed', 'dexterity'], rs = gc.r || [1, 1, 1, 1], sumR = 0, tot = 0;
+    var order = ['strength', 'defense', 'speed', 'dexterity'];
+    if (gc.p === 'baldr' || gc.p === 'hank') {
+      /* Baldr: yüksek 100 : eşi 80 : 72 : 72. Hank: yüksek 100 : 80 : 80 : en çok 28 (dump) — hedefler en yüksek stata göre */
+      var hi = order[0]; order.forEach(function (k) { if (st[k] > st[hi]) hi = k; });
+      var PB = { strength: ['speed', 'defense', 'dexterity'], speed: ['strength', 'defense', 'dexterity'], defense: ['dexterity', 'strength', 'speed'], dexterity: ['defense', 'strength', 'speed'] };
+      var PH = { strength: ['defense', 'dexterity', 'speed'], speed: ['defense', 'dexterity', 'strength'], defense: ['strength', 'speed', 'dexterity'], dexterity: ['strength', 'speed', 'defense'] };
+      var mp = gc.p === 'baldr' ? [0.80, 0.72, 0.72] : [0.80, 0.80, 0.28], rl = (gc.p === 'baldr' ? PB : PH)[hi], tg = {}, dump = '';
+      tg[hi] = st[hi]; for (var m = 0; m < 3; m++) tg[rl[m]] = st[hi] * mp[m];
+      if (gc.p === 'hank') dump = rl[2];
+      var bk = '', bdv = 0;
+      order.forEach(function (k) { if (k === hi || k === dump) return; var dv = tg[k] - st[k]; if (dv > bdv) { bdv = dv; bk = k; } });
+      var lbl = gc.p === 'baldr' ? "Baldr's" : "Hank's", dumpTx = dump ? ' · ' + T('dump stat: ', 'dump stat: ') + GYS_TR[dump] + ' ' + T('en çok ', 'max ') + Math.round(tg[dump]).toLocaleString('en-US') + (st[dump] > tg[dump] ? ' (' + T('aştı!', 'exceeded!') + ')' : '') : '';
+      if (!bk) { if (msg) msg.textContent = lbl + ': ✓ ' + T('Oran tutuyor', 'Ratio is on target') + ' (' + T('en yüksek: ', 'highest: ') + GYS_TR[hi] + ')' + dumpTx; return; }
+      for (var q2 = 0; q2 < lis.length; q2++) { var c2 = ' ' + String(lis[q2].className || ''); if (c2.indexOf(' ' + bk + '___') >= 0) lis[q2].style.boxShadow = 'inset 0 0 0 2px #22c55e'; }
+      if (msg) msg.textContent = lbl + ' · ' + T('Sıradaki: ', 'Next: ') + GYS_TR[bk] + ' (' + T('eksik ≈ ', 'short by ≈ ') + Math.round(bdv).toLocaleString('en-US') + ')' + dumpTx;
+      return;
+    }
+    var rs = gc.r || [1, 1, 1, 1], sumR = 0, tot = 0;
     order.forEach(function (k, j) { sumR += Number(rs[j]) || 0; tot += st[k]; });
     if (!(sumR > 0)) { if (msg) msg.textContent = T('Oranlar geçersiz', 'Invalid ratio'); return; }
     var best = '', bd = 0, bn = '';
