@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.77
+// @version      1.5.78
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.77', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.78', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4284,21 +4284,40 @@
   setInterval(function () { stkRender(); stkPoll(false); fcxTick(); }, 2500);
 
   /* Mülk kirası: Rental Market'e koyarken en ucuz ilanın günlük fiyatından otomatik fiyat yaz */
-  function rnPerDay(j) {
+  function rnMods(x) {
+    var m = x && (x.modifications != null ? x.modifications : x.upgrades);
+    if (m == null) return null;
+    if (!Array.isArray(m)) m = typeof m === 'object' ? Object.keys(m).filter(function (k) { return m[k]; }) : [m];
+    return m.map(function (e) { return String(e && typeof e === 'object' ? (e.name || e.id || JSON.stringify(e)) : e).toLowerCase(); }).sort().join('|');
+  }
+  function rnPerDay(j, mine) {
     var arr = null;
     (function f(o, d) { if (arr || !o || typeof o !== 'object' || d > 4) return; if (Array.isArray(o.listings)) { arr = o.listings; return; } if (Array.isArray(o.rentals)) { arr = o.rentals; return; } for (var k in o) f(o[k], d + 1); })(j, 0);
-    if (!arr) return 0;
-    var best = 0;
+    if (!arr) return { pd: 0, n: 0, t: 0, same: false };
+    var rows = [];
     arr.forEach(function (x) {
       var pd = Number(x.cost_per_day) || 0;
       if (!pd) { var c = Number(x.cost) || Number(x.price) || 0, dy = Number(x.rental_period) || Number(x.period) || Number(x.days) || 0; if (c && dy) pd = c / dy; }
-      if (pd > 0 && (!best || pd < best)) best = pd;
+      if (pd > 0) rows.push({ pd: pd, m: rnMods(x) });
     });
-    return best;
+    var use = rows, same = false;
+    if (mine != null) { var eq = rows.filter(function (r) { return r.m != null && r.m === mine; }); if (eq.length) { use = eq; same = true; } }
+    var best = 0; use.forEach(function (r) { if (!best || r.pd < best) best = r.pd; });
+    return { pd: best, n: use.length, t: rows.length, same: same };
   }
-  async function rnQuote(name) {
-    var cache = gmGet('rent-q', {}) || {}, k = name.toLowerCase();
-    if (cache[k] && Date.now() - cache[k].at < 300000) return cache[k].pd;
+  async function rnMine(pid) {
+    if (!pid) return null;
+    var c = gmGet('rent-mine', {}) || {};
+    if (c[pid] && Date.now() - c[pid].at < 300000) return c[pid].m;
+    var j = await prApi('user/properties'), found = null;
+    (function f(o, d) { if (found || !o || typeof o !== 'object' || d > 5) return; if (String(o.id) === String(pid) && (o.modifications != null || o.upgrades != null)) { found = o; return; } for (var k in o) f(o[k], d + 1); })(j, 0);
+    var m = found ? rnMods(found) : null;
+    c[pid] = { at: Date.now(), m: m }; gmSet('rent-mine', c);
+    return m;
+  }
+  async function rnQuote(name, myId) {
+    var cache = gmGet('rent-q', {}) || {}, k = name.toLowerCase() + '#' + myId;
+    if (cache[k] && Date.now() - cache[k].at < 300000) return cache[k].r;
     var ids = gmGet('prop-ids', null);
     if (!ids || Date.now() - ids.at > 7 * 86400000) {
       var jp = await prApi('torn/properties'), map = {}, list = [];
@@ -4306,12 +4325,14 @@
       list.forEach(function (x) { map[String(x.name).toLowerCase()] = String(x.id); });
       ids = { at: Date.now(), m: map }; if (Object.keys(map).length) gmSet('prop-ids', ids);
     }
-    var pid = ids.m[k];
+    var pid = ids.m[name.toLowerCase()];
     if (!pid) throw new Error(T('mülk türü bulunamadı', 'property type not found'));
-    var jr = await prApi('market/' + pid + '/rentals?limit=50'), pd = rnPerDay(jr);
-    if (!pd) throw new Error(T('ilan bulunamadı', 'no listings found'));
-    cache[k] = { at: Date.now(), pd: pd }; gmSet('rent-q', cache);
-    return pd;
+    var mine = null; try { mine = await rnMine(myId); } catch (e) {}
+    var jr = await prApi('market/' + pid + '/rentals?limit=100'), r = rnPerDay(jr, mine);
+    if (!r.pd) throw new Error(T('ilan bulunamadı', 'no listings found'));
+    r.known = mine != null;
+    cache[k] = { at: Date.now(), r: r }; gmSet('rent-q', cache);
+    return r;
   }
   function rnSet(inp, val) {
     var txt = Math.max(0, Math.floor(val)).toLocaleString('en-US');
@@ -4335,9 +4356,9 @@
       box.textContent = T('En ucuz ilan aranıyor…', 'Looking up the cheapest listing…');
       ul.parentNode.insertBefore(box, ul.nextSibling);
       try {
-        var pd = await rnQuote(nm), edited = false;
-        var apply = function () { var d = Number(String(days.value).replace(/[^\d]/g, '')) || 0; if (d > 0) rnSet(cost, pd * d); box.textContent = T('En ucuz ilan: $', 'Cheapest listing: $') + Math.round(pd).toLocaleString('en-US') + T('/gün', '/day') + ' · ' + d + T(' gün = $', ' days = $') + Math.floor(pd * d).toLocaleString('en-US'); };
-        cost.addEventListener('input', function (ev) { if (ev.isTrusted) { edited = true; box.textContent = T('Fiyatı elle değiştirdin, gün sayısı artık fiyatı değiştirmez. ', 'You edited the price; changing days no longer updates it. ') + T('En ucuz: $', 'Cheapest: $') + Math.round(pd).toLocaleString('en-US') + T('/gün', '/day'); } });
+        var rq = await rnQuote(nm, (fm.querySelectorAll('input[name="ID"]')[0] || {}).value || ''), pd = rq.pd, edited = false, tag = rq.same ? T(' (aynı geliştirmeli ' + rq.n + ' ilan içinden)', ' (among ' + rq.n + ' listings with the same upgrades)') : (rq.known ? T(' (aynı geliştirmeli ilan yok, tüm ' + rq.t + ' ilan içinden)', ' (no listing with the same upgrades; all ' + rq.t + ' listings)') : T(' (geliştirmelerin okunamadı, tüm ilanlar)', ' (could not read your upgrades; all listings)'));
+        var apply = function () { var d = Number(String(days.value).replace(/[^\d]/g, '')) || 0; if (d > 0) rnSet(cost, pd * d); box.textContent = T('En ucuz ilan: $', 'Cheapest listing: $') + Math.round(pd).toLocaleString('en-US') + T('/gün', '/day') + ' · ' + d + T(' gün = $', ' days = $') + Math.floor(pd * d).toLocaleString('en-US') + tag; };
+        cost.addEventListener('input', function (ev) { if (ev.isTrusted) { edited = true; box.textContent = T('Fiyatı elle değiştirdin, gün sayısı artık fiyatı değiştirmez. ', 'You edited the price; changing days no longer updates it. ') + T('En ucuz: $', 'Cheapest: $') + Math.round(pd).toLocaleString('en-US') + T('/gün', '/day') + tag; } });
         days.addEventListener('input', function (ev) { if (ev.isTrusted && !edited) apply(); });
         days.addEventListener('change', function (ev) { if (ev.isTrusted && !edited) apply(); });
         apply();
