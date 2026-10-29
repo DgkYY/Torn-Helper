@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.9
+// @version      1.6.10
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.9', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.10', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4712,7 +4712,17 @@
     try {
       if (c && c.d && Date.now() - c.at < 600000) j = c.d;
       else { j = await prApi('user/merits'); if (j && j.error) throw new Error(j.error.error || 'api'); gmSet('merits', { at: Date.now(), d: j }); }
-      var m = mtRows(j), h = '<div style="font-weight:700;margin-bottom:6px;">Merit Tracker</div>';
+      var ups = gmGet('merit-ups', null), me = (j && j.merits) || j || {}, h = '<div style="font-weight:700;margin-bottom:6px;">Merit Tracker</div>';
+      if (ups && ups.d && ups.d.length) {
+        var av = me.available, us = me.used;
+        h += '<div style="color:#fbbf24;margin-bottom:4px;">' + T('Boşta merit: ', 'Available merits: ') + '<b>' + (av != null ? av : '?') + '</b> · ' + T('Harcanan: ', 'Used: ') + '<b>' + (us != null ? us : '?') + '</b>' + (me.medals != null ? ' · ' + T('Madalya ', 'Medals ') + me.medals + ' / Honor ' + me.honors : '') + '</div>';
+        var rs = ups.d.slice().sort(function (x, y) { return y[1] - x[1]; });
+        h += '<table style="width:100%;border-collapse:collapse;">';
+        rs.forEach(function (e) { var full = e[1] >= e[2]; h += '<tr><td style="padding:2px 4px;border-top:1px solid #374151;' + (e[1] ? '' : 'color:#6b7280;') + '">' + String(e[0]).replace(/</g, '&lt;') + '</td><td style="padding:2px 4px;border-top:1px solid #374151;text-align:right;font-weight:700;color:' + (full ? '#86efac' : e[1] ? '#e5e7eb' : '#6b7280') + ';">' + e[1] + ' / ' + e[2] + '</td></tr>'; });
+        h += '</table><div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Upgrade seviyeleri en son Merits sayfasını açtığın andaki hali.', 'Upgrade levels are as of the last time you opened the Merits page.') + '</div>';
+        pn.innerHTML = h; return;
+      }
+      var m = mtRows(j); h += '<div style="color:#9ca3af;margin-bottom:4px;">' + T('Upgrade isimleri için bir kez Merits sayfasını aç.', 'Open the Merits page once to get upgrade names.') + '</div>';
       m.extra.forEach(function (e) { h += '<div style="color:#fbbf24;">' + e[0] + ': <b>' + e[1] + '</b></div>'; });
       if (!m.rows.length && !m.extra.length) h += '<div style="color:#f87171;">' + T('Beklenmeyen yanıt: ', 'Unexpected response: ') + JSON.stringify(j).slice(0, 200) + '</div>';
       h += '<table style="width:100%;border-collapse:collapse;margin-top:6px;">';
@@ -4721,7 +4731,14 @@
       pn.innerHTML = h;
     } catch (e) { pn.textContent = T('Alınamadı: ', 'Could not load: ') + ((e && e.message) || '?'); }
   }
+  function mtScrape() {
+    var lis = document.querySelectorAll('li[aria-label*="Upgraded:"]'); if (lis.length < 5) return;
+    var out = [];
+    lis.forEach(function (li) { var m = /^(.*?)\.\s*Upgraded:\s*(\d+)\s*\/\s*(\d+)/.exec(li.getAttribute('aria-label') || ''); if (m) out.push([m[1], +m[2], +m[3]]); });
+    if (out.length >= 5) { var old = gmGet('merit-ups', null); if (!old || JSON.stringify(old.d) !== JSON.stringify(out)) gmSet('merit-ups', { at: Date.now(), d: out }); }
+  }
   function mtTick() {
+    mtScrape();
     var a = document.getElementById('th-mt');
     if (!ui.mtr) { if (a) a.parentNode.remove(); var op = document.getElementById('th-mtp'); if (op) op.remove(); return; }
     if (a && a.isConnected) return;
@@ -4839,7 +4856,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.9';
+  var TH_VER = '1.6.10';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -4856,7 +4873,8 @@
     ['1.6.6', 'o', ['Gym Coach: Baldr\'s Ratio ve Hank\'s Ratio hazır oranları (Gym sayfasındaki panelden seçilir).'], ['Gym Coach: Baldr\'s and Hank\'s ratio presets (chosen in the panel on the Gym page).']],
     ['1.6.7', 'o', ['OC sayfasında ağırlıklı başarı değeri (tornprobability.com rol ağırlıkları).'], ['Weighted success on the OC page (role weights from tornprobability.com).']],
     ['1.6.8', 'n', ['Güncelleme notu penceresi: her yeni sürümde bir kez açılır.'], ['Patch notes window: shown once per new version.']],
-    ['1.6.9', 'n', ['Güncelleme notlarında yeniliğin hangi ayarlarda olduğu yazıyor; atlanan sürümler sırayla gösteriliyor (Sonraki / Önceki).'], ['Patch notes now say where each feature is in the settings; skipped versions are shown one by one (Next / Back).']]
+    ['1.6.9', 'n', ['Güncelleme notlarında yeniliğin hangi ayarlarda olduğu yazıyor; atlanan sürümler sırayla gösteriliyor (Sonraki / Önceki).'], ['Patch notes now say where each feature is in the settings; skipped versions are shown one by one (Next / Back).']],
+    ['1.6.10', 'o', ['Merit Tracker: upgrade isimleri ve seviyeleri (Life 4 / 10 gibi), boşta ve harcanan merit. Merits sayfasını bir kez açman yeter.'], ['Merit Tracker: upgrade names and levels (e.g. Life 4 / 10), available and used merits. Open the Merits page once.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
