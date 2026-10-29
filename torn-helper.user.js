@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.2
+// @version      1.5.21
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -153,10 +153,14 @@
       return { name: m[1].trim().replace(/\s+/g, ' '), endsAt: Date.now() + sec * 1000 };
     } catch (e) { return null; }
   }
+  var lastEvent = null;
+  try { lastEvent = GM_getValue('event-info', null); if (lastEvent && lastEvent.endsAt > Date.now()) THOST.eventInfo = lastEvent; } catch (e) {}
   function eventTick() {
     var e = readEvent();
-    if (e) THOST.eventInfo = e;
-    else if (THOST.eventInfo && THOST.eventInfo.endsAt <= Date.now()) THOST.eventInfo = null;
+    if (e) {
+      THOST.eventInfo = e; lastEvent = e;
+      try { GM_setValue('event-info', e); } catch (x) {}
+    } else if (THOST.eventInfo && THOST.eventInfo.endsAt <= Date.now()) THOST.eventInfo = null;
     dotCheck();
   }
   setInterval(eventTick, 10000);
@@ -2705,7 +2709,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.2', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.21', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -2876,9 +2880,24 @@
   window.addEventListener('resize', applyBtnPos);
   /* düğmedeki nokta: enerji dolu (isteğe bağlı, dakikada en fazla 1 istek) */
   function setDot(on) { var d = root.getElementById('x-dot'); if (d) d.hidden = !on; }
+  function readComp() {
+    try { var o = GM_getValue('comp-now', null); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
+  }
+  /* event sürüyor mu: banner'dan kaydedilen bitiş zamanı, yoksa /user/competition (5 dk'da bir) */
   function eventActive() {
-    var e = THOST.eventInfo;
-    return !!e && e.endsAt > Date.now() && /trick|treat|halloween/i.test(e.name || '');
+    var now = Date.now(), e = THOST.eventInfo;
+    if (e && e.endsAt > now) return /trick|treat|halloween/i.test(e.name || '');
+    if (lastEvent && lastEvent.endsAt && lastEvent.endsAt <= now && /trick|treat|halloween/i.test(lastEvent.name || '')) return false;
+    var c = readComp();
+    return !!c && !!c.active && now - c.at < 900000;
+  }
+  function compCheck(key) {
+    if (!THOST.pollGate('comp', 300000)) return;
+    gmFetch('https://api.torn.com/v2/user/competition?key=' + encodeURIComponent(key) + '&comment=torn-helper').then(function (r) { return r.json(); }).then(function (j) {
+      var c = (j && j.competition) || j || {};
+      try { GM_setValue('comp-now', { active: /halloween/i.test(String(c.name || '')), at: Date.now() }); } catch (x) {}
+      updateAtk();
+    }).catch(function () {});
   }
   function readEnergy() {
     try { var o = GM_getValue('energy-now', null); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
@@ -2898,9 +2917,12 @@
     a.style.bottom = Math.max(0, window.innerHeight - r.bottom) + 'px';
   }
   function dotCheck() {
-    var want = ui.state === 'btn' && (ui.dot || (ui.atkBtn && eventActive()));
+    var want = ui.state === 'btn' && (ui.dot || ui.atkBtn);
     if (!want) { setDot(false); updateAtk(); return; }
     var key = LS.getItem('torn-api-key-v1');
+    var validKey = !!key && /^[A-Za-z0-9]{12,32}$/.test(key);
+    if (ui.atkBtn && validKey && !(THOST.eventInfo && THOST.eventInfo.endsAt > Date.now())) compCheck(key);
+    if (!ui.dot && !eventActive()) { updateAtk(); return; }
     var en = readEnergy();
     if (en) setDot(!!ui.dot && Number(en.max) > 0 && Number(en.cur) >= Number(en.max));
     updateAtk();
