@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.6
+// @version      1.6.9
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -20,6 +20,7 @@
 // @connect      ffscouter.com
 // @connect      api.prombot.co.uk
 // @connect      yata.yt
+// @connect      tornprobability.com
 // ==/UserScript==
 
 (function () {
@@ -55,7 +56,7 @@
   };
 
   /* ağ: CORS sorunu olmasın diye Tampermonkey üzerinden */
-  var ALLOWED_HOSTS = ['api.torn.com', 'ffscouter.com', 'api.prombot.co.uk', 'yata.yt'];
+  var ALLOWED_HOSTS = ['api.torn.com', 'ffscouter.com', 'api.prombot.co.uk', 'yata.yt', 'tornprobability.com'];
   function gmFetch(url) {
     var pu;
     try { pu = new URL(url); } catch (e) { return Promise.reject(new TypeError('bad url')); }
@@ -2886,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.6', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.9', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4735,10 +4736,26 @@
   }
   setInterval(mtTick, 1500);
 
-  /* Faction OC: her suç için slot başarı şansı özeti (ortalama, en zayıf halka) */
+  /* Faction OC: her suç için slot başarı şansı özeti (ağırlıklı + ortalama, en zayıf halka) */
+  var ocwBusy = false;
+  function ocN(x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  async function ocwLoad() {
+    var c = gmGet('oc-w', null);
+    if (c && c.d && Date.now() - c.at < 86400000) return;
+    if (ocwBusy || (c && c.fail && Date.now() - c.fail < 600000)) return;
+    ocwBusy = true;
+    try {
+      var r = await gmFetch('https://tornprobability.com:3000/api/GetRoleWeights'), j = await r.json(), m = {};
+      Object.keys(j || {}).forEach(function (cn) { var roles = j[cn]; if (!roles || typeof roles !== 'object') return; var o = {}; Object.keys(roles).forEach(function (rn) { var w = Number(roles[rn]); if (isFinite(w)) o[ocN(rn)] = w; }); m[ocN(cn)] = o; });
+      if (Object.keys(m).length) gmSet('oc-w', { at: Date.now(), d: m }); else gmSet('oc-w', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now() });
+    } catch (e) { gmSet('oc-w', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now() }); }
+    ocwBusy = false;
+  }
   function ocsTick() {
     var old = document.querySelectorAll('.th-ocs');
     if (!ui.ocs || !/factions\.php/i.test(location.pathname)) { for (var z = 0; z < old.length; z++) old[z].remove(); return; }
+    ocwLoad();
+    var wc = gmGet('oc-w', null), W = wc && wc.d ? wc.d : null;
     var sc = document.querySelectorAll('[class*="successChance___"]'), groups = [], gh = [];
     for (var i = 0; i < sc.length; i++) {
       var g = sc[i].parentNode && sc[i].parentNode.parentNode ? sc[i].parentNode.parentNode.parentNode : null;
@@ -4751,10 +4768,14 @@
       var arr = gh[q], el = groups[q].querySelectorAll('.th-ocs')[0];
       if (!arr.length) { if (el) el.remove(); continue; }
       var sum = 0, mn = arr[0]; arr.forEach(function (a) { sum += a[1]; if (a[1] < mn[1]) mn = a; });
-      var txt = T('Ortalama %', 'Average ') + (sum / arr.length).toFixed(0) + (T('', '%')) + ' · ' + T('en düşük: ', 'lowest: ') + mn[0] + ' ' + mn[1] + '%';
+      var card = groups[q].closest ? groups[q].closest('[data-oc-id]') : null, pt = card ? card.querySelectorAll('[class*="panelTitle"]')[0] : null, cw = W && pt ? W[ocN(pt.textContent)] : null;
+      var wsum = 0, wtot = 0, miss = 0;
+      if (cw) arr.forEach(function (a) { var rn = ocN(a[0]), w = cw[rn]; if (w == null) w = cw[rn.replace(/\d+$/, '')]; if (w == null) { miss++; return; } wsum += w * a[1]; wtot += w; });
+      var txt = (cw && !miss && wtot > 0 ? T('Ağırlıklı %', 'Weighted ') + (wsum / wtot).toFixed(1) + (T('', '%')) + ' · ' : '') + T('Ortalama %', 'Average ') + (sum / arr.length).toFixed(0) + (T('', '%')) + ' · ' + T('en düşük: ', 'lowest: ') + mn[0] + ' ' + mn[1] + '%';
       if (!el) { el = document.createElement('div'); el.className = 'th-ocs'; el.style.cssText = 'margin:4px 0;padding:3px 8px;border-radius:4px;background:#2a2a2a;font:700 11px Arial,sans-serif;'; groups[q].appendChild(el); }
-      el.style.color = mn[1] >= 75 ? '#86efac' : mn[1] >= 60 ? '#fbbf24' : '#f87171';
-      el.title = T('Slot başarı şanslarının basit ortalaması (ağırlıksız); en zayıf halka renklendirilir', 'Unweighted average of the slot success chances; the weakest slot sets the colour');
+      var main = cw && !miss && wtot > 0 ? wsum / wtot : mn[1];
+      el.style.color = main >= 75 ? '#86efac' : main >= 60 ? '#fbbf24' : '#f87171';
+      el.title = cw && !miss ? T('Ağırlıklı değer: tornprobability.com rol ağırlıklarıyla hesaplandı', 'Weighted value uses the role weights from tornprobability.com') : T('Ağırlık verisi yok ya da bu suç için eşleşmedi; basit ortalama gösteriliyor', 'No weights for this crime; showing the simple average');
       if (el.textContent !== txt) el.textContent = txt;
     }
   }
@@ -4816,6 +4837,58 @@
     });
   }
   setInterval(cstTick, 1000);
+
+  /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
+  var TH_VER = '1.6.9';
+  var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
+  var CHANGES = [
+    ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
+    ['1.5.87', 'o', ['Crimes: seçenek bazında ortalama $/nerve ve başarı oranı kaydı (Search for Cash, Bootlegging, Graffiti, Shoplifting, Pickpocketing).'], ['Crimes: logs average $/nerve and success rate per option (Search for Cash, Bootlegging, Graffiti, Shoplifting, Pickpocketing).']],
+    ['1.5.91', 'o', ['Stake out: can yüzdesi eşiğinin altına inince uyarı (profildeki Stake out panelinden ayarlanır).'], ['Stake out: alert when life drops below a percentage (set in the profile Stake out panel).']],
+    ['1.5.92', 'o', ['Hapishane sayfasında seviye, süre ve FF filtresi.'], ['Jail page: level, time and FF filter.']],
+    ['1.5.93', 'o', ['Profil sayfasında seninle bu oyuncu arasındaki saldırı geçmişi özeti.'], ['Profile page: attack history summary between you and the player.']],
+    ['1.5.94', 'o', ['Pickpocketing: hedefler kayıtlı başarı oranına göre renkleniyor (Crimes kaydı açık olmalı).'], ['Pickpocketing: targets are coloured by your logged success rate (needs the Crimes logging option).']],
+    ['1.5.99', 'o', ['Merit Tracker: kenar çubuğunda Merits altında açılır pencere.'], ['Merit Tracker: popup under Merits in the sidebar.']],
+    ['1.5.98', 'o', ['Silah bonus açıklamaları: Eşyalar sayfası, loadout, Item Market ve Bazaar.'], ['Weapon bonus descriptions: Items page, loadout, Item Market and Bazaar.']],
+    ['1.6.0', 'o', ['Faction OC sayfasında her suç için slot başarı ortalaması ve en zayıf halka.'], ['Faction OC page: average slot success and weakest slot per crime.']],
+    ['1.6.3', 'o', ['Şirket Stock Shipments: hedef gün sayısına göre otomatik sipariş doldurma ve "Depoyu doldur" düğmesi.'], ['Company Stock Shipments: auto-fill the order for a target number of days, plus a "Fill storage" button.']],
+    ['1.6.5', 's', ['"Nerve refill hazır" uyarısı bugün kullanılmışsa artık çıkmıyor.'], ['"Nerve refill ready" no longer shows when it was already used today.']],
+    ['1.6.6', 'o', ['Gym Coach: Baldr\'s Ratio ve Hank\'s Ratio hazır oranları (Gym sayfasındaki panelden seçilir).'], ['Gym Coach: Baldr\'s and Hank\'s ratio presets (chosen in the panel on the Gym page).']],
+    ['1.6.7', 'o', ['OC sayfasında ağırlıklı başarı değeri (tornprobability.com rol ağırlıkları).'], ['Weighted success on the OC page (role weights from tornprobability.com).']],
+    ['1.6.8', 'n', ['Güncelleme notu penceresi: her yeni sürümde bir kez açılır.'], ['Patch notes window: shown once per new version.']],
+    ['1.6.9', 'n', ['Güncelleme notlarında yeniliğin hangi ayarlarda olduğu yazıyor; atlanan sürümler sırayla gösteriliyor (Sonraki / Önceki).'], ['Patch notes now say where each feature is in the settings; skipped versions are shown one by one (Next / Back).']]
+  ];
+  function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
+  var pnShown = false;
+  function pnTick() {
+    if (pnShown || window.top !== window || !document.body) return;
+    var seen = gmGet('seen-ver', '');
+    if (seen && thVerCmp(seen, TH_VER) >= 0) { pnShown = true; return; }
+    var list = CHANGES.filter(function (c) { return thVerCmp(c[0], TH_VER) <= 0 && (!seen || thVerCmp(c[0], seen) > 0); }).sort(function (a, b) { return thVerCmp(a[0], b[0]); });
+    if (!seen) list = list.slice(-1);
+    pnShown = true;
+    if (!list.length) { gmSet('seen-ver', TH_VER); return; }
+    var idx = 0, pn = document.createElement('div'); pn.id = 'th-pn';
+    pn.style.cssText = 'position:fixed;z-index:2147483001;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92vw);max-height:78vh;overflow:auto;padding:14px 16px;background:#1f2937;border:1px solid #4b5563;border-radius:8px;font:13px Arial,sans-serif;color:#e5e7eb;box-shadow:0 8px 30px rgba(0,0,0,.7);';
+    function draw() {
+      var c = list[idx], last = idx === list.length - 1, h = '<div style="font:700 15px Arial,sans-serif;margin-bottom:2px;">Torn-Helper ' + T('güncellendi', 'updated') + '</div>';
+      h += '<div style="color:#9ca3af;margin-bottom:8px;">' + T('Yenilik ', 'Update ') + (idx + 1) + ' / ' + list.length + '</div>';
+      h += '<div style="margin:6px 0;"><b style="color:#fbbf24;font-size:14px;">v' + c[0] + '</b>';
+      (T(c[2], c[3]) || []).forEach(function (l) { h += '<div style="padding:2px 0 2px 10px;">• ' + String(l).replace(/</g, '&lt;') + '</div>'; });
+      h += '<div style="padding:4px 0 0 10px;color:#86efac;">' + T('Nerede: ', 'Where: ') + T(PN_LOC[c[1]][0], PN_LOC[c[1]][1]) + '</div></div>';
+      h += '<div style="margin-top:12px;display:flex;justify-content:space-between;gap:8px;">' + (idx > 0 ? '<button type="button" data-prev="1" style="padding:5px 14px;border:0;border-radius:5px;background:#4b5563;color:#fff;font:700 13px Arial,sans-serif;cursor:pointer;">‹ ' + T('Önceki', 'Back') + '</button>' : '<span></span>');
+      h += '<button type="button" ' + (last ? 'data-ok="1"' : 'data-next="1"') + ' style="padding:5px 16px;border:0;border-radius:5px;background:#2563eb;color:#fff;font:700 13px Arial,sans-serif;cursor:pointer;">' + (last ? T('Tamam', 'OK') : T('Sonraki', 'Next') + ' ›') + '</button></div>';
+      pn.innerHTML = h;
+    }
+    pn.addEventListener('click', function (ev) {
+      var t = ev.target; if (!t || !t.getAttribute) return;
+      if (t.getAttribute('data-next') && idx < list.length - 1) { idx++; draw(); }
+      else if (t.getAttribute('data-prev') && idx > 0) { idx--; draw(); }
+      else if (t.getAttribute('data-ok')) { gmSet('seen-ver', TH_VER); pn.remove(); }
+    });
+    draw(); document.body.appendChild(pn);
+  }
+  setTimeout(pnTick, 2500);
 
   /* Hapishane: seviye / süre / FF filtresi */
   function jlHours(t) {
