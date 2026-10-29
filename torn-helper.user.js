@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.4
+// @version      1.6.5
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.4', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.5', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3839,7 +3839,11 @@
           if (jb[0] === 'oc') { var v = sbFindNum(j, ['ready_at']); d.oc = v ? (v < 1e12 ? v * 1000 : v) : 0; }
           if (jb[0] === 'nr') {
             var rf = j.refills || j, nv = rf && rf.nerve;
-            d.nr = nv === true || (nv && typeof nv === 'object' && nv.available === true) ? 1 : 0;
+            /* user/refills: nerve true = bugün kullanıldı (hazır değil). Nesne gelirse used/available alanına bak. */
+            var nrReady = 0;
+            if (nv === false) nrReady = 1;
+            else if (nv && typeof nv === 'object') { if (nv.used === false || nv.available === true) nrReady = 1; }
+            d.nr = nrReady;
           }
           if (jb[0] === 'bk') {
             var cb = (function f(o, dp) { if (!o || typeof o !== 'object' || dp > 4) return undefined; if ('city_bank' in o) return o.city_bank; for (var q in o) { var r = f(o[q], dp + 1); if (r !== undefined) return r; } return undefined; })(j, 0);
