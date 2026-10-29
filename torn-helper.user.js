@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.23
+// @version      1.6.24
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.23', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.24', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4725,14 +4725,14 @@
         h += '<div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Awards sayfasında açtığın bölümlerden (Honors/Medals) okunur.', 'Read from the Awards page sections (Honors/Medals) you opened.') + '</div>';
       } else h += '<div style="color:#9ca3af;">' + T('Awards sayfasını (Honors ve Medals sekmeleri) bir kez aç, ilerleme buraya gelir.', 'Open the Awards page (Honors and Medals tabs) once to load progress.') + '</div>';
       var st = gmGet('merit-aw-st', null);
-      h += '<div style="margin-top:6px;font-size:11px;color:#9ca3af;"><span id="th-mtst">' + (st ? String(st.m).replace(/</g, '&lt;') : '') + '</span> <a href="#" data-scan="1" style="color:#60a5fa;">' + T('Şimdi tara', 'Scan now') + '</a></div>';
+      h += '<div style="margin-top:6px;font-size:11px;color:#9ca3af;"><span id="th-mtst">' + (st ? String(st.m).replace(/</g, '&lt;') : '') + '</span> · <span id="th-mttrv">' + String(gmGet('merit-trv-st', '') || '').replace(/</g, '&lt;') + '</span> <a href="#" data-scan="1" style="color:#60a5fa;">' + T('Şimdi tara', 'Scan now') + '</a></div>';
       if (ups && ups.d && ups.d.length) {
         h += '<details style="margin-top:8px;"><summary style="cursor:pointer;color:#9ca3af;">' + T('Upgrade seviyeleri', 'Upgrade levels') + '</summary><table style="width:100%;border-collapse:collapse;">';
         ups.d.slice().sort(function (x, y) { return y[1] - x[1]; }).forEach(function (e) { var full = e[1] >= e[2]; h += '<tr><td style="padding:2px 4px;border-top:1px solid #374151;color:' + (e[1] ? '#e5e7eb' : '#6b7280') + ';">' + String(e[0]).replace(/</g, '&lt;') + '</td><td style="padding:2px 4px;border-top:1px solid #374151;text-align:right;font-weight:700;color:' + (full ? '#86efac' : e[1] ? '#e5e7eb' : '#6b7280') + ';">' + e[1] + ' / ' + e[2] + '</td></tr>'; });
         h += '</table></details>';
       } else h += '<div style="margin-top:6px;color:#9ca3af;font-size:11px;">' + T('Upgrade isimleri için bir kez Merits sayfasını aç.', 'Open the Merits page once for upgrade names.') + '</div>';
       pn.innerHTML = h;
-      var sc = pn.querySelector('[data-scan]'); if (sc) sc.addEventListener('click', function (ev) { ev.preventDefault(); sc.textContent = T('taranıyor…', 'scanning…'); mtFullScan(true); });
+      var sc = pn.querySelector('[data-scan]'); if (sc) sc.addEventListener('click', function (ev) { ev.preventDefault(); sc.textContent = T('taranıyor…', 'scanning…'); mtTrvLoad(true); mtFullScan(true); });
       return;
       var m = mtRows(j); h += '<div style="color:#9ca3af;margin-bottom:4px;">' + T('Upgrade isimleri için bir kez Merits sayfasını aç.', 'Open the Merits page once to get upgrade names.') + '</div>';
       m.extra.forEach(function (e) { h += '<div style="color:#fbbf24;">' + e[0] + ': <b>' + e[1] + '</b></div>'; });
@@ -4756,23 +4756,29 @@
     [/mug/i, ['moneymugged']], [/hospitali[sz]e/i, ['attackshosp', 'hospitalized']], [/stalemate|draw/i, ['attacksdraw']], [/escape/i, ['attacksescaped', 'escapes']]
   ];
   var mtTrvBusy = false;
-  async function mtTrvLoad() {
+  function mtTrvSt(m) { gmSet('merit-trv-st', m); var el = document.getElementById('th-mttrv'); if (el) el.textContent = m; }
+  async function mtTrvLoad(force) {
     var c = gmGet('merit-trv', null);
-    if (mtTrvBusy || (c && Date.now() - c.at < 1800000) || !keyOk()) return;
-    if (c && c.fail && Date.now() - c.fail < 600000) return;
+    if (mtTrvBusy || !keyOk()) return;
+    if (!force && ((c && Date.now() - c.at < 1800000) || (c && c.fail && Date.now() - c.fail < 600000))) return;
     mtTrvBusy = true;
-    try {
-      var j = await prApi('user/personalstats?cat=all');
-      var want = {}; Object.keys(MT_STAT).forEach(function (k) { want[MT_STAT[k]] = 1; }); MT_RULES.forEach(function (r) { r[1].forEach(function (k) { want[k] = 1; }); });
-      var out = {};
-      (function walk(o, d) {
-        if (!o || typeof o !== 'object' || d > 6) return;
-        if (Array.isArray(o)) { o.forEach(function (it) { if (it && typeof it === 'object' && it.name && typeof it.value === 'number') { if (want[it.name]) out[it.name] = it.value; } else walk(it, d + 1); }); return; }
-        for (var k in o) { if (typeof o[k] === 'number') { if (want[k]) out[k] = o[k]; } else walk(o[k], d + 1); }
-      })(j, 0);
-      if (Object.keys(out).length) gmSet('merit-trv', { at: Date.now(), d: out }); else gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} });
-    } catch (e) { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); }
-    mtTrvBusy = false; mtLast = '';
+    var want = {}; Object.keys(MT_STAT).forEach(function (k) { want[MT_STAT[k]] = 1; }); MT_RULES.forEach(function (r) { r[1].forEach(function (k) { want[k] = 1; }); });
+    var tries = ['user/personalstats?stat=' + Object.keys(want).join(','), 'user/personalstats?cat=all'], out = {}, msg = '';
+    for (var ti = 0; ti < tries.length && !Object.keys(out).length; ti++) {
+      try {
+        var j = await prApi(tries[ti]), seen = [];
+        if (j && j.error) { msg = (j.error.error || 'API') + ' (' + (j.error.code != null ? j.error.code : '?') + ')'; continue; }
+        (function walk(o, d) {
+          if (!o || typeof o !== 'object' || d > 6) return;
+          if (Array.isArray(o)) { o.forEach(function (it) { if (it && typeof it === 'object' && it.name && typeof it.value === 'number') { if (seen.length < 6) seen.push(it.name); if (want[it.name]) out[it.name] = it.value; } else walk(it, d + 1); }); return; }
+          for (var k in o) { if (typeof o[k] === 'number') { if (seen.length < 6) seen.push(k); if (want[k]) out[k] = o[k]; } else walk(o[k], d + 1); }
+        })(j, 0);
+        if (!Object.keys(out).length) msg = T('Yanıtta beklenen alan yok. Örnek alanlar: ', 'No expected fields. Sample fields: ') + (seen.join(', ') || JSON.stringify(j).slice(0, 120));
+      } catch (e) { msg = (e && e.message) || 'hata'; }
+    }
+    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + Object.keys(out).length + T(' alan', ' fields')); }
+    else { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); mtTrvSt(T('İstatistik alınamadı: ', 'Stats failed: ') + msg); }
+    mtTrvBusy = false; mtLast = ''; mtRefresh();
   }
   function mtEnr(v) {
     if (v[1] || v[0] > 0) return v;
@@ -4847,6 +4853,7 @@
     var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ctx[3]) + '' + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
     al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
     if (!al.length) { var st2 = gmGet('merit-aw-st', null); h += '<div style="color:#9ca3af;">' + T('Bu sayfa için kayıtlı ödül yok. ', 'No stored awards for this page. ') + (st2 ? String(st2.m).replace(/</g, '&lt;') : '') + '</div>'; }
+    if (al.some(function (x) { return x[1][0] === 0 && !x[1][1]; })) h += '<div style="margin-top:4px;font-size:10px;color:#9ca3af;">' + String(gmGet('merit-trv-st', '') || '').replace(/</g, '&lt;') + '</div>';
     pn.innerHTML = h;
     pn.addEventListener('click', function (e) { if (e.target && e.target.getAttribute && e.target.getAttribute('data-x')) pn.remove(); });
     if (host) { var bx2 = document.getElementById('th-sbx2'); if (bx2 && bx2.parentNode === host) host.insertBefore(pn, bx2.nextSibling); else host.appendChild(pn); } else document.body.appendChild(pn);
@@ -5051,7 +5058,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.23';
+  var TH_VER = '1.6.24';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5082,7 +5089,8 @@
     ['1.6.20', 'o', ['Merit Tracker: uçuş sayfasında artık tüm ülkelerin olası ödülleri gösteriliyor (seçtiğin ülke en üstte).'], ['Merit Tracker: the travel page now shows possible awards for all countries (the chosen country first).']],
     ['1.6.21', 'o', ['Merit Tracker: Torn ilerlemesini göstermediği honorlarda yanlış "%0" yazmak yerine "—" gösteriliyor.'], ['Merit Tracker: honors where Torn does not show progress now display "—" instead of a wrong "0%".']],
     ['1.6.22', 'o', ['Merit Tracker: "Travel to <ülke> N times" honorlarında ilerleme API kişisel istatistiklerinden (ülkeye uçuş sayın) hesaplanıyor.'], ['Merit Tracker: for "Travel to <country> N times" honors, progress is computed from your API personal stats (flights per country).']],
-    ['1.6.23', 'o', ['Merit Tracker: ilerlemesi gösterilmeyen honorlar için (uçuş, finishing hit, defend, critical, rounds, refill, bounty, OC, stat kazanımı vb.) ilerleme API kişisel istatistiklerinden hesaplanıyor.'], ['Merit Tracker: for honors without shown progress (travel, finishing hits, defends, criticals, rounds, refills, bounties, OC, stat gains etc.) progress is computed from your API personal stats.']]
+    ['1.6.23', 'o', ['Merit Tracker: ilerlemesi gösterilmeyen honorlar için (uçuş, finishing hit, defend, critical, rounds, refill, bounty, OC, stat kazanımı vb.) ilerleme API kişisel istatistiklerinden hesaplanıyor.'], ['Merit Tracker: for honors without shown progress (travel, finishing hits, defends, criticals, rounds, refills, bounties, OC, stat gains etc.) progress is computed from your API personal stats.']],
+    ['1.6.24', 'o', ['Merit Tracker: istatistik çekme iki yolla deneniyor ve sonucu (başarı ya da hata nedeni) pencerede yazıyor.'], ['Merit Tracker: stats are fetched in two ways and the result (success or error reason) is shown in the panel.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
