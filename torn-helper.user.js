@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.40
+// @version      1.5.41
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.40', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.41', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3136,14 +3136,41 @@
     try { var C = window.AudioContext || window.webkitAudioContext; if (!C) return; if (!actx) actx = new C(); if (actx.state === 'suspended') actx.resume(); } catch (e) {}
   }
   document.addEventListener('pointerdown', audioUnlock, true);
+  var sndBuf = null, sndBufSrc = '';
+  function sndFail(force, why) { if (force) sndMsg(why, true); }
+  function sndHtml(snd, force) {
+    try {
+      var au = new Audio(snd); au.volume = 0.8;
+      var pr = au.play();
+      if (pr && pr.catch) pr.catch(function (e) { sndFail(force, T('Tarayıcı sesi çalmaya izin vermedi: ', 'The browser did not allow playback: ') + String((e && e.name) || e)); });
+      setTimeout(function () { try { au.pause(); } catch (e2) {} }, 6000);
+    } catch (e) { sndFail(force, T('Ses çalınamadı.', 'Could not play the sound.')); }
+  }
+  function sndPlay(snd, force) {
+    audioUnlock();
+    if (!actx || !actx.decodeAudioData) { sndHtml(snd, force); return; }
+    var go = function (buf) {
+      try {
+        var s = actx.createBufferSource(), g = actx.createGain(); s.buffer = buf; g.gain.value = 0.8;
+        s.connect(g); g.connect(actx.destination); s.start(0);
+        setTimeout(function () { try { s.stop(); } catch (e) {} }, 6000);
+        if (actx.state === 'suspended') actx.resume();
+      } catch (e) { sndHtml(snd, force); }
+    };
+    if (sndBuf && sndBufSrc === snd) { go(sndBuf); return; }
+    try {
+      var bin = atob(snd.slice(snd.indexOf(',') + 1)), u8 = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      var p = actx.decodeAudioData(u8.buffer, function (buf) { sndBuf = buf; sndBufSrc = snd; go(buf); }, function () { sndHtml(snd, force); });
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) { sndHtml(snd, force); }
+  }
   function beep(force) {
     if (!ui.sound && !force) return;
     try {
       var snd = gmGet('snd', null);
       if (typeof snd === 'string' && snd.indexOf('data:audio/') === 0) {
-        var au = new Audio(snd); au.volume = 0.8;
-        var pr = au.play(); if (pr && pr.catch) pr.catch(function () {});
-        setTimeout(function () { try { au.pause(); } catch (e) {} }, 6000);
+        sndPlay(snd, force);
         return;
       }
       audioUnlock(); if (!actx) return;
