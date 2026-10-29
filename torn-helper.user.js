@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.63
+// @version      1.5.64
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.63', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.64', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3752,6 +3752,20 @@
     if (hh) return hh + 'h ' + m + 'm ' + x + 's';
     return m + 'm ' + x + 's';
   }
+  var rcLast = 0;
+  function rcParse(txt) {
+    txt = String(txt || '');
+    var h = /(\d+)\s*hour/.exec(txt), m = /(\d+)\s*minute/.exec(txt), c = /(\d+)\s*second/.exec(txt);
+    if (!h && !m && !c) return 0;
+    return Date.now() + (((h ? +h[1] : 0) * 3600) + ((m ? +m[1] : 0) * 60) + (c ? +c[1] : 0)) * 1000;
+  }
+  function rcFetch() {
+    rcLast = Date.now();
+    fetch('/page.php?sid=racing', { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (t) {
+      var d = new DOMParser().parseFromString(t, 'text/html'), sp = d.getElementById('infoSpot'), e = sp ? rcParse(sp.textContent) : 0;
+      if (e) { var rr = gmGet('sb-race', null) || {}; if (!rr.end || Math.abs(rr.end - e) > 3000) gmSet('sb-race', { end: e, done: false }); sbXRender(); }
+    }).catch(function () {});
+  }
   function sbXRender() {
     var d = gmGet('sb-x', null) || {}, now = Date.now(), chain = document.querySelectorAll('[class*="chainBar___"]')[0], box = document.getElementById('th-x');
     var lines = [];
@@ -3770,9 +3784,9 @@
     if (ui.sbrc) {
       var rci = document.querySelectorAll('[class*="statusIcons___"] [class*="icon17___"] a')[0], rsp = document.getElementById('infoSpot'), rr = gmGet('sb-race', null) || {};
       if (rci && rsp) {
-        var rt = String(rsp.textContent || ''), rh = /(\d+)\s*hour/.exec(rt), rm = /(\d+)\s*minute/.exec(rt), rsc = /(\d+)\s*second/.exec(rt);
-        if (rh || rm || rsc) { var rend = Date.now() + (((rh ? +rh[1] : 0) * 3600) + ((rm ? +rm[1] : 0) * 60) + (rsc ? +rsc[1] : 0)) * 1000; if (!rr.end || Math.abs(rr.end - rend) > 3000) { rr = { end: rend, done: false }; gmSet('sb-race', rr); } }
-      }
+        var rend = rcParse(rsp.textContent);
+        if (rend && (!rr.end || Math.abs(rr.end - rend) > 3000)) { rr = { end: rend, done: false }; gmSet('sb-race', rr); }
+      } else if (rci && (!rr.end || rr.end < now) && now - rcLast > 60000 && !document.hidden) rcFetch();
       if (!rci) { if (rr.end) gmSet('sb-race', {}); lines.push(T('Race: yarışta değil', 'Race: not in a race')); }
       else {
         var rl = rr.end ? Math.round((rr.end - now) / 1000) : 0;
