@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.71
+// @version      1.5.72
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.71', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.72', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4162,27 +4162,59 @@
     var r = await gmFetch('https://api.torn.com/v2/' + path + (path.indexOf('?') < 0 ? '?' : '&') + 'key=' + encodeURIComponent(key) + '&comment=torn-helper');
     return r.json();
   }
+  var SK = [['hl', 'Hastaneden çıkınca', 'Leaves hospital'], ['jl', 'Hapisten çıkınca', 'Leaves jail'], ['bk', "Torn'a inince (seyahat bitince)", 'Lands in Torn'], ['ld', 'Yurtdışına inince', 'Lands abroad'], ['ok', 'Durumu Okay olunca', 'Becomes Okay'], ['hi', 'Hastaneye girince', 'Enters hospital'], ['ji', 'Hapse girince', 'Goes to jail'], ['tr', 'Seyahate çıkınca', 'Starts travelling']];
+  function skEvents(prev, now) {
+    var P = String(prev || '').toLowerCase(), N = String(now || '').toLowerCase(), e = [];
+    if (!P || P === N) return e;
+    if (P === 'hospital') e.push('hl');
+    if (P === 'jail') e.push('jl');
+    if (P === 'traveling' && N === 'okay') e.push('bk');
+    if (P === 'traveling' && N === 'abroad') e.push('ld');
+    if (N === 'okay') e.push('ok');
+    if (N === 'hospital') e.push('hi');
+    if (N === 'jail') e.push('ji');
+    if (N === 'traveling') e.push('tr');
+    return e;
+  }
+  function stkPanel(a, id) {
+    var pn = document.getElementById('th-stkp');
+    if (pn) { pn.remove(); return; }
+    var all = gmGet('stake', {}) || {}, cur = all[id], o = (cur && cur.o) || { hl: 1, ok: 1 }, one = cur ? cur.one !== false : true;
+    pn = document.createElement('div'); pn.id = 'th-stkp';
+    var r = a.getBoundingClientRect();
+    pn.style.cssText = 'position:fixed;z-index:2147483000;top:' + Math.round(r.bottom + 4) + 'px;left:' + Math.max(8, Math.round(Math.min(r.left, window.innerWidth - 290))) + 'px;width:270px;padding:10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;box-shadow:0 4px 14px rgba(0,0,0,.6);';
+    var h = '<div style="font-weight:700;margin-bottom:6px;">' + T('Hangi durumda haber vereyim?', 'When should I alert you?') + '</div>';
+    SK.forEach(function (x) { h += '<label style="display:block;padding:2px 0;cursor:pointer;"><input type="checkbox" data-k="' + x[0] + '"' + (o[x[0]] ? ' checked' : '') + '> ' + T(x[1], x[2]) + '</label>'; });
+    h += '<label style="display:block;padding:6px 0 2px;cursor:pointer;color:#9ca3af;"><input type="checkbox" data-one="1"' + (one ? ' checked' : '') + '> ' + T('Haber verdikten sonra gözlemi bırak', 'Stop watching after the alert') + '</label>';
+    h += '<div style="margin-top:8px;display:flex;gap:6px;"><button type="button" data-go="1" style="flex:1;padding:4px;border:0;border-radius:4px;background:#2563eb;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + (cur ? T('Güncelle', 'Update') : T('Gözlemeye başla', 'Start watching')) + '</button>' + (cur ? '<button type="button" data-stop="1" style="padding:4px 8px;border:0;border-radius:4px;background:#7f1d1d;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Bırak', 'Stop') + '</button>' : '') + '</div>';
+    pn.innerHTML = h;
+    document.body.appendChild(pn);
+    pn.addEventListener('click', function (ev) {
+      var t = ev.target;
+      if (t && t.getAttribute && t.getAttribute('data-stop')) { var m = gmGet('stake', {}) || {}; delete m[id]; gmSet('stake', m); pn.remove(); toast('Stake out', T('Gözlem kapatıldı', 'Stopped'), 3000); stkRender(); return; }
+      if (t && t.getAttribute && t.getAttribute('data-go')) {
+        var oo = {}, any = false, bx = pn.querySelectorAll('input[data-k]');
+        for (var i = 0; i < bx.length; i++) if (bx[i].checked) { oo[bx[i].getAttribute('data-k')] = 1; any = true; }
+        if (!any) { toast('Stake out', T('En az bir durum seç', 'Pick at least one'), 3000); return; }
+        var mm = gmGet('stake', {}) || {}, nm = (document.title.split(/'s Profile/)[0] || '').replace(/^.*\|\s*/, '').trim() || id;
+        mm[id] = { n: (mm[id] && mm[id].n) || nm, s: (mm[id] && mm[id].s) || '', o: oo, one: !!pn.querySelector('input[data-one]').checked };
+        gmSet('stake', mm); askPerm(); pn.remove();
+        toast('Stake out', T(nm + ' gözleniyor.', 'Watching ' + nm + '.'), 4000);
+        stkPoll(true); stkRender();
+      }
+    });
+  }
   function stkRender() {
     var id = prId(), a = document.getElementById('th-stk');
-    if (!ui.stk || !/\/profiles\.php/i.test(location.pathname) || !id) { if (a) a.remove(); return; }
-    var all = gmGet('stake', {}) || {}, on = !!all[id], tx = on ? T('Gözlemeyi bırak', 'Stop staking out') : T('Bu oyuncuyu gözle (Stake out)', 'Stake out this player');
+    if (!ui.stk || !/\/profiles\.php/i.test(location.pathname) || !id) { if (a) a.remove(); var op = document.getElementById('th-stkp'); if (op) op.remove(); return; }
+    var all = gmGet('stake', {}) || {}, on = !!all[id], tx = on ? T('Gözleniyor ✓ (ayarlar)', 'Watching ✓ (settings)') : T('Bu oyuncuyu gözle (Stake out)', 'Stake out this player');
     if (!a || !a.isConnected) {
       a = document.createElement('a'); a.id = 'th-stk'; a.href = '#';
       a.style.cssText = 'display:inline-block;margin:4px 0 0 0;padding:2px 8px;border-radius:4px;background:#374151;color:#fbbf24;font:700 12px Arial,sans-serif;text-decoration:none;cursor:pointer;';
-      var host = document.getElementById('top-page-links-list') || document.querySelectorAll('.content-title')[0] || document.querySelectorAll('[class*="profile-wrapper"]')[0] || document.getElementById('mainContainer');
+      var host = document.getElementById('top-page-links-list') || document.querySelectorAll('.content-title')[0] || document.getElementById('mainContainer');
       if (!host) return;
       if (host.id === 'top-page-links-list') { a.style.margin = '0 8px'; host.insertBefore(a, host.firstChild); } else host.appendChild(a);
-      a.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        var m = gmGet('stake', {}) || {}, pid = prId();
-        if (m[pid]) { delete m[pid]; toast('Stake out', T('Gözlem kapatıldı', 'Stopped'), 3000); }
-        else {
-          var h = document.querySelectorAll('h4, h1, h2')[0], nm = (document.title.split(/'s Profile/)[0] || '').replace(/^.*\|\s*/, '').trim() || pid;
-          m[pid] = { n: nm, s: '' }; askPerm();
-          toast('Stake out', T(nm + ' gözleniyor. Durumu Okay olunca haber vereceğim.', 'Watching ' + nm + '. I will alert you when they are Okay.'), 5000);
-        }
-        gmSet('stake', m); stkPoll(true); stkRender();
-      });
+      a.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); stkPanel(a, prId()); });
     }
     if (a.textContent !== tx) a.textContent = tx;
   }
@@ -4199,10 +4231,11 @@
         var p = (j && j.profile) || j || {}, stt = String((p.status && p.status.state) || '').trim();
         if (!stt) continue;
         var cur = gmGet('stake', {}) || {}; if (!cur[id]) continue;
-        var prev = cur[id].s;
-        if (/^okay$/i.test(stt) && prev && !/^okay$/i.test(prev)) {
-          notifyOnce('stake-' + id + '-' + Date.now().toString().slice(0, -5), T('Stake out: ' + cur[id].n + ' hazır', 'Stake out: ' + cur[id].n + ' is ready'), T('Durum Okay oldu (önceki: ' + prev + ')', 'Status is Okay now (was: ' + prev + ')'), 12000);
-          delete cur[id];
+        var ev = skEvents(cur[id].s, stt).filter(function (k) { return cur[id].o && cur[id].o[k]; });
+        if (ev.length) {
+          var labs = ev.map(function (k) { for (var q = 0; q < SK.length; q++) if (SK[q][0] === k) return T(SK[q][1], SK[q][2]); return k; });
+          notifyOnce('stake-' + id + '-' + Date.now().toString().slice(0, -5), 'Stake out: ' + cur[id].n, labs.join(', ') + ' (' + cur[id].s + ' → ' + stt + ')', 12000);
+          if (cur[id].one !== false) delete cur[id]; else cur[id].s = stt;
         } else cur[id].s = stt;
         gmSet('stake', cur);
       }
@@ -4231,7 +4264,7 @@
     if (mark) return;
     btn.style.position = 'relative';
     mark = document.createElement('span'); mark.className = 'th-fcx';
-    mark.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#ef4444;font:900 34px Arial,sans-serif;text-shadow:0 0 3px #000;pointer-events:none;';
+    mark.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#3b82f6;font:900 36px Arial,sans-serif;text-shadow:0 0 3px #000;pointer-events:none;';
     mark.textContent = '✕';
     btn.appendChild(mark);
     btn.title = T('Bu oyuncu senin factionundan', 'This player is in your faction');
