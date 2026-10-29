@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.18
+// @version      1.6.23
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.18', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.23', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4718,14 +4718,14 @@
       var ups = gmGet('merit-ups', null), me = (j && j.merits) || j || {}, h = '<div style="font-weight:700;margin-bottom:6px;">Merit Tracker</div>';
       var av = me.available, us = me.used, TD = 'padding:2px 4px;border-top:1px solid #374151;color:#e5e7eb;';
       h += '<div style="color:#fbbf24;margin-bottom:6px;">' + T('Boşta merit: ', 'Available merits: ') + '<b>' + (av != null ? av : '?') + '</b> · ' + T('Harcanan: ', 'Used: ') + '<b>' + (us != null ? us : '?') + '</b></div>';
-      var aw = gmGet('merit-aw', null), al = aw && aw.d ? Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) { return x[1][0] > 0 && x[1][0] < 100; }).sort(function (x, y) { return y[1][0] - x[1][0]; }).slice(0, 12) : [];
+      mtTrvLoad(); var aw = gmGet('merit-aw', null), al = aw && aw.d ? Object.keys(aw.d).map(function (k) { return [k, mtEnr(aw.d[k])]; }).filter(function (x) { return x[1][0] > 0 && x[1][0] < 100; }).sort(function (x, y) { return y[1][0] - x[1][0]; }).slice(0, 12) : [];
       h += '<div style="font-weight:700;margin:4px 0;">' + T('Merit kazanmaya en yakın ödüller', 'Closest awards (merit sources)') + '</div>';
       if (al.length) {
         al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
         h += '<div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Awards sayfasında açtığın bölümlerden (Honors/Medals) okunur.', 'Read from the Awards page sections (Honors/Medals) you opened.') + '</div>';
       } else h += '<div style="color:#9ca3af;">' + T('Awards sayfasını (Honors ve Medals sekmeleri) bir kez aç, ilerleme buraya gelir.', 'Open the Awards page (Honors and Medals tabs) once to load progress.') + '</div>';
       var st = gmGet('merit-aw-st', null);
-      h += '<div style="margin-top:6px;font-size:11px;color:#9ca3af;">' + (st ? String(st.m).replace(/</g, '&lt;') : '') + ' <a href="#" data-scan="1" style="color:#60a5fa;">' + T('Şimdi tara', 'Scan now') + '</a></div>';
+      h += '<div style="margin-top:6px;font-size:11px;color:#9ca3af;"><span id="th-mtst">' + (st ? String(st.m).replace(/</g, '&lt;') : '') + '</span> <a href="#" data-scan="1" style="color:#60a5fa;">' + T('Şimdi tara', 'Scan now') + '</a></div>';
       if (ups && ups.d && ups.d.length) {
         h += '<details style="margin-top:8px;"><summary style="cursor:pointer;color:#9ca3af;">' + T('Upgrade seviyeleri', 'Upgrade levels') + '</summary><table style="width:100%;border-collapse:collapse;">';
         ups.d.slice().sort(function (x, y) { return y[1] - x[1]; }).forEach(function (e) { var full = e[1] >= e[2]; h += '<tr><td style="padding:2px 4px;border-top:1px solid #374151;color:' + (e[1] ? '#e5e7eb' : '#6b7280') + ';">' + String(e[0]).replace(/</g, '&lt;') + '</td><td style="padding:2px 4px;border-top:1px solid #374151;text-align:right;font-weight:700;color:' + (full ? '#86efac' : e[1] ? '#e5e7eb' : '#6b7280') + ';">' + e[1] + ' / ' + e[2] + '</td></tr>'; });
@@ -4743,9 +4743,53 @@
       pn.innerHTML = h;
     } catch (e) { pn.textContent = T('Alınamadı: ', 'Could not load: ') + ((e && e.message) || '?'); }
   }
+  var MT_STAT = { 'Argentina': 'argtravel', 'Mexico': 'mextravel', 'UAE': 'dubtravel', 'United Arab Emirates': 'dubtravel', 'Hawaii': 'hawtravel', 'Japan': 'japtravel', 'United Kingdom': 'lontravel', 'South Africa': 'soutravel', 'Switzerland': 'switravel', 'China': 'chitravel', 'Cayman Islands': 'caytravel', 'Canada': 'cantravel' };
+  var MT_RULES = [
+    [/finishing hits? with rifles?/i, ['rifleshits']], [/finishing hits? with shotguns?/i, ['shotgunhits']], [/finishing hits? with pistols?/i, ['pistolhits']],
+    [/finishing hits? with smgs?/i, ['smghits']], [/finishing hits? with (fists|fist)/i, ['h2hhits']], [/finishing hits? with clubbing/i, ['axehits', 'clubbedhits']],
+    [/finishing hits? with piercing/i, ['piercinghits']], [/finishing hits? with slashing/i, ['slashinghits']], [/finishing hits? with mechanical/i, ['mechanicalhits']],
+    [/finishing hits? with machine/i, ['machinehits', 'machinegunhits']], [/finishing hits? with heavy/i, ['heavyhits']], [/finishing hits? with temporary/i, ['temphits', 'temporaryhits']],
+    [/critical hits/i, ['attackcriticalhits', 'criticalhits']], [/successfully defend|defend against|win [\d,]+ defends/i, ['defendswon']], [/win [\d,]+ attacks?/i, ['attackswon']],
+    [/rounds/i, ['roundsfired']], [/refill your energy/i, ['refills', 'energyrefills']], [/refill your nerve/i, ['nerverefills']], [/travel abroad|travel [\d,]+ times|trips/i, ['traveltimes']],
+    [/collect [\d,]+ bount/i, ['bountiescollected']], [/organi[sz]ed crimes/i, ['organisedcrimes', 'organizedcrimes']], [/revive/i, ['revives']],
+    [/gain [\d,]+ strength/i, ['strength']], [/gain [\d,]+ speed/i, ['speed']], [/gain [\d,]+ dexterity/i, ['dexterity']], [/gain [\d,]+ defense/i, ['defense']], [/total stats/i, ['totalstats', 'total']],
+    [/mug/i, ['moneymugged']], [/hospitali[sz]e/i, ['attackshosp', 'hospitalized']], [/stalemate|draw/i, ['attacksdraw']], [/escape/i, ['attacksescaped', 'escapes']]
+  ];
+  var mtTrvBusy = false;
+  async function mtTrvLoad() {
+    var c = gmGet('merit-trv', null);
+    if (mtTrvBusy || (c && Date.now() - c.at < 1800000) || !keyOk()) return;
+    if (c && c.fail && Date.now() - c.fail < 600000) return;
+    mtTrvBusy = true;
+    try {
+      var j = await prApi('user/personalstats?cat=all');
+      var want = {}; Object.keys(MT_STAT).forEach(function (k) { want[MT_STAT[k]] = 1; }); MT_RULES.forEach(function (r) { r[1].forEach(function (k) { want[k] = 1; }); });
+      var out = {};
+      (function walk(o, d) {
+        if (!o || typeof o !== 'object' || d > 6) return;
+        if (Array.isArray(o)) { o.forEach(function (it) { if (it && typeof it === 'object' && it.name && typeof it.value === 'number') { if (want[it.name]) out[it.name] = it.value; } else walk(it, d + 1); }); return; }
+        for (var k in o) { if (typeof o[k] === 'number') { if (want[k]) out[k] = o[k]; } else walk(o[k], d + 1); }
+      })(j, 0);
+      if (Object.keys(out).length) gmSet('merit-trv', { at: Date.now(), d: out }); else gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} });
+    } catch (e) { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); }
+    mtTrvBusy = false; mtLast = '';
+  }
+  function mtEnr(v) {
+    if (v[1] || v[0] > 0) return v;
+    var t = gmGet('merit-trv', null); if (!t || !t.d) return v;
+    var ds = v[2] || '', n = 0, c = null, m = /Travel to (.+?) ([\d,]+) times/i.exec(ds);
+    if (m) { var st = MT_STAT[m[1].trim()]; if (st && t.d[st] != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(t.d[st]); } }
+    else {
+      var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
+      for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) for (var k = 0; k < MT_RULES[i][1].length; k++) if (t.d[MT_RULES[i][1][k]] != null) { c = Number(t.d[MT_RULES[i][1][k]]); n = parseFloat(nm[1].replace(/,/g, '')); break; }
+    }
+    if (c == null || !(n > 0) || c >= n) return v;
+    return [Math.round(c / n * 1000) / 10, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US'), v[2], v[3]];
+  }
   function mtPct(p) { return p >= 99.95 ? '99.9' : (p >= 10 ? String(Math.floor(p)) : String(Math.round(p * 10) / 10)); }
   function mtAwRow(nm, v) {
-    return '<div title="' + String(v[2]).replace(/"/g, '&quot;') + '" style="padding:3px 0;border-top:1px solid #374151;"><div style="display:flex;justify-content:space-between;gap:6px;"><span style="min-width:0;">' + String(nm).replace(/</g, '&lt;') + ' <span style="font-size:10px;color:#9ca3af;">' + (v[3] === 'm' ? 'medal' : 'honor') + '</span></span><b style="color:' + (v[0] >= 80 ? '#86efac' : '#e5e7eb') + ';white-space:nowrap;">' + mtPct(v[0]) + '%</b></div><div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + (v[1] ? ' · ' + v[1] : '') + '</div></div>';
+    v = mtEnr(v);
+    return '<div title="' + String(v[2]).replace(/"/g, '&quot;') + '" style="padding:3px 0;border-top:1px solid #374151;"><div style="display:flex;justify-content:space-between;gap:6px;"><span style="min-width:0;">' + String(nm).replace(/</g, '&lt;') + ' <span style="font-size:10px;color:#9ca3af;">' + (v[3] === 'm' ? 'medal' : 'honor') + '</span></span><b style="color:' + (v[0] >= 80 ? '#86efac' : '#e5e7eb') + ';white-space:nowrap;">' + (v[0] === 0 && !v[1] ? '—' : mtPct(v[0]) + '%') + '</b></div><div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + (v[1] ? ' · ' + v[1] : (v[0] === 0 ? ' · ' + T('Torn bu ödülün ilerlemesini göstermiyor', 'Torn does not show progress for this award') : '')) + '</div></div>';
   }
   /* Merit: bulunduğun sayfaya uygun ödüllerin ilerlemesini otomatik göster */
   var MT_CTX = [
@@ -4785,22 +4829,22 @@
       var tm = /(?:^|\n)\s*To:\s*([A-Za-z ]+?)\s*(?:\n|$)/.exec(document.body.innerText || '');
       if (tm) for (var ci = 0; ci < MT_COUNTRIES.length; ci++) if (MT_COUNTRIES[ci].toLowerCase() === tm[1].trim().toLowerCase()) { mtCountry = MT_COUNTRIES[ci]; break; }
     }
-    var key = ctx[0] + (ctx[0] === 'travel' ? mtCountry : '');
+    if (ctx[0] === 'travel') mtTrvLoad();
+    var key = ctx[0];
     if (key === mtLast) return;
     var aw = gmGet('merit-aw', null); if (!aw || !aw.d) aw = { d: {} };
     mtLast = key;
     var al = Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) {
       var t = x[0] + ' ' + x[1][2]; if (x[1][0] >= 100 || !ctx[2].test(t)) return false;
-      if (ctx[0] === 'travel' && mtCountry) { var tl = t.toLowerCase(), mine = tl.indexOf(mtCountry.toLowerCase()) >= 0 || (mtCountry === 'UAE' && /arab|uae/i.test(t)); if (mine) return true; for (var q = 0; q < MT_COUNTRIES.length; q++) if (tl.indexOf(MT_COUNTRIES[q].toLowerCase()) >= 0) return false; return true; }
       return true;
-    }).sort(function (a, b) { return b[1][0] - a[1][0]; }).slice(0, 6);
+    }).map(function (x) { return [x[0], mtEnr(x[1])]; }).sort(function (a, b) { var ma = ctx[0] === 'travel' && mtCountry && (a[0] + ' ' + a[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0, mb = ctx[0] === 'travel' && mtCountry && (b[0] + ' ' + b[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0; return (mb - ma) || (b[1][0] - a[1][0]); }).slice(0, ctx[0] === 'travel' ? 14 : 6);
     if (old) old.remove();
     var awc = gmGet('merit-aw', null);
     if (!al.length && awc && awc.full) return;
     var pn = document.createElement('div'); pn.id = 'th-mta';
     var host = document.querySelectorAll('[class*="userInformation___"]')[0];
     pn.style.cssText = host ? 'box-sizing:border-box;width:100%;margin-top:6px;padding:6px 8px;background:#1f2937;border:1px solid #4b5563;border-radius:4px;font:12px Arial,sans-serif;color:#e5e7eb;' : 'position:fixed;z-index:2147482000;right:14px;bottom:14px;width:270px;max-height:50vh;overflow:auto;padding:8px 10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;';
-    var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ctx[3]) + (ctx[0] === 'travel' && mtCountry ? ' · ' + mtCountry : '') + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
+    var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ctx[3]) + '' + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
     al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
     if (!al.length) { var st2 = gmGet('merit-aw-st', null); h += '<div style="color:#9ca3af;">' + T('Bu sayfa için kayıtlı ödül yok. ', 'No stored awards for this page. ') + (st2 ? String(st2.m).replace(/</g, '&lt;') : '') + '</div>'; }
     pn.innerHTML = h;
@@ -4811,14 +4855,15 @@
   /* Awards sayfasını gezip (gizli iframe ya da sayfa açıkken) tüm honor/medal ilerlemesini otomatik topla */
   var mtFullBusy = false;
   function mtSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  function mtStat(msg) { gmSet('merit-aw-st', { at: Date.now(), m: msg }); }
+  function mtStat(msg) { gmSet('merit-aw-st', { at: Date.now(), m: msg }); var el = document.getElementById('th-mtst'); if (el) el.textContent = msg; }
+  function mtRefresh() { var o = document.getElementById('th-mtp'), l = document.getElementById('th-mt'); if (o && l) { o.remove(); mtOpen(l); } }
   async function mtCycle(d) {
     var tabs = ['honors', 'medals'], first = d.querySelector('li[role="tab"][class*="selectedTab"]');
     for (var t = 0; t < tabs.length; t++) {
       var tb = d.querySelector('li#' + tabs[t] + '[role="tab"]'); if (tb) { tb.click(); await mtSleep(900); }
       var pnl = d.getElementById(tabs[t] + '-panel') || d, cats = pnl.querySelectorAll('li[class*="category___"]');
       mtAwScrape(d);
-      for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); }
+      for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); mtStat(T('Taranıyor: ', 'Scanning: ') + tabs[t] + ' ' + (k + 1) + '/' + cats.length); }
     }
     if (first && first.click) first.click();
     var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.v = 3; cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
@@ -4836,7 +4881,7 @@
     mtFullBusy = true; mtStat(T('Tarama sürüyor…', 'Scanning…'));
     if (/sid=awards/i.test(location.search)) {
       try { var d0 = null; for (var q = 0; q < 30; q++) { d0 = document.querySelector('li[class*="category___"]') ? document : null; if (d0) break; await mtSleep(500); } if (!d0) throw new Error('Awards sayfası okunamadı'); await mtCycle(document); } catch (e) { mtStat(String((e && e.message) || e)); }
-      mtFullBusy = false; mtLast = ''; return;
+      mtFullBusy = false; mtLast = ''; mtRefresh(); return;
     }
     var fr = document.createElement('iframe');
     fr.src = 'https://www.torn.com/page.php?sid=awards'; fr.setAttribute('aria-hidden', 'true');
@@ -4848,7 +4893,7 @@
       if (!d) throw new Error(T('Arka plan taraması olmadı (' + why + '). Awards sayfasını bir kez açarsan orada otomatik taranır.', 'Background scan failed. Open the Awards page once and it will scan there.'));
       await mtCycle(d);
     } catch (e) { mtStat(String((e && e.message) || e)); }
-    fr.remove(); mtFullBusy = false; mtLast = '';
+    fr.remove(); mtFullBusy = false; mtLast = ''; mtRefresh();
   }
   setTimeout(function () { mtFullScan(); setInterval(mtFullScan, 600000); }, 8000);
   function mtAwScrape(doc) {
@@ -5006,7 +5051,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.18';
+  var TH_VER = '1.6.23';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5032,7 +5077,12 @@
     ['1.6.15', 'b', ['Ayarlar toparlandı: yeni "Bildirimler" bölümü (enerji, ilaç, tıbbi, booster, chain, hastane olaylarını tek tek seçebilirsin, ses ve ön uyarı da burada); Kenar çubuğu ve Diğer sayfalar alt başlıklara bölündü.'], ['Settings reorganised: new "Notifications" section (pick energy, drug, medical, booster, chain and hospital events individually; sound and early warning are here too); Sidebar and Other pages are split into sub-sections.']],
     ['1.6.16', 'o', ['Merit Tracker satırı artık Notlar/Bağlantılar gibi kenar çubuğunda Bağlantılar\u0027ın altında; ödül taraması arka planda başarısız olursa Awards sayfasını açınca orada otomatik taranır; popupta "Şimdi tara" ve durum yazısı var.'], ['The Merit Tracker row now sits under Links in the sidebar; if the background scan fails, opening the Awards page scans it there automatically; the popup has a "Scan now" link and a status line.']],
     ['1.6.17', 'o', ['Merit Tracker: uçuş sayfasında seçtiğin ülke otomatik algılanıyor; henüz ilerlemesi sıfır olan honorlar da otomatik pencerede çıkıyor; satır düzeni daraltıldı, yüzdeler artık taşmıyor.'], ['Merit Tracker: the destination chosen on the travel page is detected automatically; honors with zero progress now show in the auto popup; rows are narrower and percentages no longer overflow.']],
-    ['1.6.18', 'o', ['Merit Tracker: ödül verisi yenilenince (sıfır ilerlemeli honorlar dahil) bir kez otomatik yeniden taranır; ülke seçilince ülkeye özel ve genel uçuş ödülleri birlikte gösterilir.'], ['Merit Tracker: award data is rescanned once automatically (including zero-progress honors); with a destination chosen, country-specific and generic travel awards are shown together.']]
+    ['1.6.18', 'o', ['Merit Tracker: ödül verisi yenilenince (sıfır ilerlemeli honorlar dahil) bir kez otomatik yeniden taranır; ülke seçilince ülkeye özel ve genel uçuş ödülleri birlikte gösterilir.'], ['Merit Tracker: award data is rescanned once automatically (including zero-progress honors); with a destination chosen, country-specific and generic travel awards are shown together.']],
+    ['1.6.19', 'o', ['Merit Tracker: tarama durumu canlı güncelleniyor (hangi sekme/kategori), bitince açık pencere kendini yeniler.'], ['Merit Tracker: scan status updates live (tab/category), and the open panel refreshes itself when the scan ends.']],
+    ['1.6.20', 'o', ['Merit Tracker: uçuş sayfasında artık tüm ülkelerin olası ödülleri gösteriliyor (seçtiğin ülke en üstte).'], ['Merit Tracker: the travel page now shows possible awards for all countries (the chosen country first).']],
+    ['1.6.21', 'o', ['Merit Tracker: Torn ilerlemesini göstermediği honorlarda yanlış "%0" yazmak yerine "—" gösteriliyor.'], ['Merit Tracker: honors where Torn does not show progress now display "—" instead of a wrong "0%".']],
+    ['1.6.22', 'o', ['Merit Tracker: "Travel to <ülke> N times" honorlarında ilerleme API kişisel istatistiklerinden (ülkeye uçuş sayın) hesaplanıyor.'], ['Merit Tracker: for "Travel to <country> N times" honors, progress is computed from your API personal stats (flights per country).']],
+    ['1.6.23', 'o', ['Merit Tracker: ilerlemesi gösterilmeyen honorlar için (uçuş, finishing hit, defend, critical, rounds, refill, bounty, OC, stat kazanımı vb.) ilerleme API kişisel istatistiklerinden hesaplanıyor.'], ['Merit Tracker: for honors without shown progress (travel, finishing hits, defends, criticals, rounds, refills, bounties, OC, stat gains etc.) progress is computed from your API personal stats.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
