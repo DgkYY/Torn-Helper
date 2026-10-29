@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.24
+// @version      1.6.26
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.24', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.26', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4776,7 +4776,7 @@
         if (!Object.keys(out).length) msg = T('Yanıtta beklenen alan yok. Örnek alanlar: ', 'No expected fields. Sample fields: ') + (seen.join(', ') || JSON.stringify(j).slice(0, 120));
       } catch (e) { msg = (e && e.message) || 'hata'; }
     }
-    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + Object.keys(out).length + T(' alan', ' fields')); }
+    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + Object.keys(out).length + T(' alan', ' fields') + ' (' + Object.keys(out).slice(0, 14).join(', ') + ')'); }
     else { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); mtTrvSt(T('İstatistik alınamadı: ', 'Stats failed: ') + msg); }
     mtTrvBusy = false; mtLast = ''; mtRefresh();
   }
@@ -4872,17 +4872,31 @@
       mtAwScrape(d);
       for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); mtStat(T('Taranıyor: ', 'Scanning: ') + tabs[t] + ' ' + (k + 1) + '/' + cats.length); }
     }
+    /* Awards sayfasındaki arama kutusunu da kullan: aramada tüm ödüllerin ilerlemesi görünüyor */
+    for (var t2 = 0; t2 < tabs.length; t2++) {
+      try {
+        var tb2 = d.querySelector('li#' + tabs[t2] + '[role="tab"]'); if (tb2) { tb2.click(); await mtSleep(700); }
+        var sb = d.querySelector('button[aria-label="Search on ' + tabs[t2] + ' tab"]'); if (sb) { sb.click(); await mtSleep(500); }
+        var inp = d.querySelector('input[type="text"], input[type="search"], input:not([type])'), W = d.defaultView || window;
+        if (inp) {
+          var setter = Object.getOwnPropertyDescriptor(W.HTMLInputElement.prototype, 'value').set;
+          var qs = ['a', 'e', 'o', 'i', 'u'];
+          for (var q = 0; q < qs.length; q++) { setter.call(inp, qs[q]); inp.dispatchEvent(new W.Event('input', { bubbles: true })); await mtSleep(900); mtAwScrape(d); mtStat(T('Aranıyor: ', 'Searching: ') + tabs[t2] + ' ' + (q + 1) + '/' + qs.length); }
+          setter.call(inp, ''); inp.dispatchEvent(new W.Event('input', { bubbles: true }));
+        }
+      } catch (e) { /* arama olmadı, kategori verisi yeter */ }
+    }
     if (first && first.click) first.click();
-    var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.v = 3; cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
+    var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.v = 4; cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
     mtStat(T('Tarama tamam: ', 'Scan done: ') + Object.keys(cc.d).length + T(' ödül', ' awards'));
   }
   async function mtFullScan(force) {
     if (mtFullBusy || !ui.mtr) return;
     var c = gmGet('merit-aw', null);
     if (!force) {
-      if (c && c.full && c.v === 3 && Date.now() - c.full < 6 * 3600000) return;
-      var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000 && !(c && c.v !== 3 && !gmGet('merit-aw-v3', 0))) return;
-      if (c && c.v !== 3) gmSet('merit-aw-v3', 1);
+      if (c && c.full && c.v === 4 && Date.now() - c.full < 6 * 3600000) return;
+      var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000 && !(c && c.v !== 4 && !gmGet('merit-aw-v4', 0))) return;
+      if (c && c.v !== 4) gmSet('merit-aw-v4', 1);
     }
     gmSet('merit-aw-try', Date.now());
     mtFullBusy = true; mtStat(T('Tarama sürüyor…', 'Scanning…'));
@@ -5058,7 +5072,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.24';
+  var TH_VER = '1.6.26';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5090,7 +5104,9 @@
     ['1.6.21', 'o', ['Merit Tracker: Torn ilerlemesini göstermediği honorlarda yanlış "%0" yazmak yerine "—" gösteriliyor.'], ['Merit Tracker: honors where Torn does not show progress now display "—" instead of a wrong "0%".']],
     ['1.6.22', 'o', ['Merit Tracker: "Travel to <ülke> N times" honorlarında ilerleme API kişisel istatistiklerinden (ülkeye uçuş sayın) hesaplanıyor.'], ['Merit Tracker: for "Travel to <country> N times" honors, progress is computed from your API personal stats (flights per country).']],
     ['1.6.23', 'o', ['Merit Tracker: ilerlemesi gösterilmeyen honorlar için (uçuş, finishing hit, defend, critical, rounds, refill, bounty, OC, stat kazanımı vb.) ilerleme API kişisel istatistiklerinden hesaplanıyor.'], ['Merit Tracker: for honors without shown progress (travel, finishing hits, defends, criticals, rounds, refills, bounties, OC, stat gains etc.) progress is computed from your API personal stats.']],
-    ['1.6.24', 'o', ['Merit Tracker: istatistik çekme iki yolla deneniyor ve sonucu (başarı ya da hata nedeni) pencerede yazıyor.'], ['Merit Tracker: stats are fetched in two ways and the result (success or error reason) is shown in the panel.']]
+    ['1.6.24', 'o', ['Merit Tracker: istatistik çekme iki yolla deneniyor ve sonucu (başarı ya da hata nedeni) pencerede yazıyor.'], ['Merit Tracker: stats are fetched in two ways and the result (success or error reason) is shown in the panel.']],
+    ['1.6.25', 'o', ['Merit Tracker: otomatik tarama artık Awards sayfasının arama kutusunu da kullanıyor (aramada tüm ödüllerin ilerlemesi görünüyor).'], ['Merit Tracker: the automatic scan now also uses the Awards page search box (search shows progress for all awards).']],
+    ['1.6.26', 'o', ['Merit Tracker: okunan istatistik alanlarının adları durum satırında yazıyor.'], ['Merit Tracker: the names of the stat fields read are shown in the status line.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
