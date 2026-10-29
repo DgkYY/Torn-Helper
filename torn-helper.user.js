@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.84
+// @version      1.5.85
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.84', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.85', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4520,6 +4520,17 @@
     } catch (e) { gmSet('nw', { at: Date.now(), err: (e && e.message) || 'hata' }); }
     nwBusy = false;
   }
+  function nwNum(v) {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string' && /^-?[\d.]+$/.test(v)) return Number(v);
+    if (v && typeof v === 'object') {
+      var ks = ['value', 'total', 'amount', 'worth', 'networth', 'market_value'];
+      for (var i = 0; i < ks.length; i++) if (v[ks[i]] != null) { var r = nwNum(v[ks[i]]); if (r != null) return r; }
+      var sum = 0, any = false; for (var k in v) { if (typeof v[k] === 'number') { sum += v[k]; any = true; } }
+      return any ? sum : null;
+    }
+    return null;
+  }
   function nwFmt(n) { return (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US'); }
   function nwRender() {
     var li = document.getElementById('th-nw'), det = document.getElementById('th-nwd'), base = document.querySelectorAll('li[aria-label^="Networth"]')[0];
@@ -4531,15 +4542,25 @@
       base.classList.remove('last'); base.parentNode.insertBefore(li, base.nextSibling); li.classList.add('last');
       li.querySelector('.th-nwi').addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); nwOpen = !nwOpen; nwRender(); });
     }
-    var v = li.querySelector('.th-nwv'), tx = d && d.d ? nwFmt(Number(d.d.total) || 0) : (d && d.err ? T('okunamadı', 'unavailable') : '…');
+    var v = li.querySelector('.th-nwv'), tx = d && d.d ? nwFmt(nwNum(d.d.total) || 0) : (d && d.err ? T('okunamadı', 'unavailable') : '…');
     if (v.textContent !== tx) v.textContent = tx;
     if (!nwOpen) { if (det) det.remove(); return; }
     if (!det || !det.isConnected) { det = document.createElement('li'); det.id = 'th-nwd'; det.style.cssText = 'list-style:none;padding:6px 10px;background:rgba(0,0,0,.25);font:12px Arial,sans-serif;'; li.parentNode.insertBefore(det, li.nextSibling); }
     var h = '';
     if (d && d.d) {
-      var o = d.d, rows = Object.keys(NW_LAB).filter(function (k) { return o[k] != null && Number(o[k]) !== 0; }).sort(function (a, b) { return Math.abs(Number(o[b])) - Math.abs(Number(o[a])); });
-      var total = Number(o.total) || 1;
-      rows.forEach(function (k) { var val = Number(o[k]); h += '<div style="display:flex;justify-content:space-between;gap:12px;padding:1px 0;color:' + (val < 0 ? '#f87171' : '#e5e7eb') + ';"><span>' + T(NW_LAB[k][0], NW_LAB[k][1]) + '</span><span>' + nwFmt(val) + ' <span style="color:#9ca3af;">(' + (val / total * 100).toFixed(1) + '%)</span></span></div>'; });
+      var o = d.d, total = Number(nwNum(o.total)) || 1, rows = [];
+      Object.keys(o).forEach(function (k) {
+        if (/^(total|parsetime|timestamp|time|id|name)$/i.test(k)) return;
+        var v = nwNum(o[k]);
+        if (v == null || !isFinite(v) || v === 0) { if (v == null && o[k] != null && typeof o[k] === 'object') rows.push({ k: k, raw: JSON.stringify(o[k]).slice(0, 80) }); return; }
+        rows.push({ k: k, v: v });
+      });
+      rows.sort(function (a, b) { return Math.abs(b.v || 0) - Math.abs(a.v || 0); });
+      rows.forEach(function (r) {
+        var lab = NW_LAB[r.k] ? T(NW_LAB[r.k][0], NW_LAB[r.k][1]) : r.k.replace(/_/g, ' ');
+        if (r.raw) { h += '<div style="display:flex;justify-content:space-between;gap:12px;padding:1px 0;color:#9ca3af;"><span>' + lab + '</span><span style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.raw.replace(/</g, '&lt;') + '</span></div>'; return; }
+        h += '<div style="display:flex;justify-content:space-between;gap:12px;padding:1px 0;color:' + (r.v < 0 ? '#f87171' : '#e5e7eb') + ';"><span>' + lab + '</span><span>' + nwFmt(r.v) + ' <span style="color:#9ca3af;">(' + (r.v / total * 100).toFixed(1) + '%)</span></span></div>';
+      });
       h += '<div style="margin-top:4px;color:#9ca3af;">' + T('Güncellendi: ', 'Updated: ') + Math.max(0, Math.round((Date.now() - d.at) / 60000)) + T(' dk önce', ' min ago') + '</div>';
     } else h = '<div style="color:#fca5a5;">' + (d && d.err ? T('Networth okunamadı: ', 'Could not read networth: ') + d.err : '…') + '</div>';
     if (det.getAttribute('data-h') !== h) { det.setAttribute('data-h', h); det.innerHTML = h; }
