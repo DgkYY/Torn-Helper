@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.10
+// @version      1.6.11
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.10', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.11', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4720,6 +4720,15 @@
         h += '<table style="width:100%;border-collapse:collapse;">';
         rs.forEach(function (e) { var full = e[1] >= e[2]; h += '<tr><td style="padding:2px 4px;border-top:1px solid #374151;' + (e[1] ? '' : 'color:#6b7280;') + '">' + String(e[0]).replace(/</g, '&lt;') + '</td><td style="padding:2px 4px;border-top:1px solid #374151;text-align:right;font-weight:700;color:' + (full ? '#86efac' : e[1] ? '#e5e7eb' : '#6b7280') + ';">' + e[1] + ' / ' + e[2] + '</td></tr>'; });
         h += '</table><div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Upgrade seviyeleri en son Merits sayfasını açtığın andaki hali.', 'Upgrade levels are as of the last time you opened the Merits page.') + '</div>';
+        var aw = gmGet('merit-aw', null);
+        if (aw && aw.d) {
+          var al = Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) { return x[1][0] > 0 && x[1][0] < 100; }).sort(function (x, y) { return y[1][0] - x[1][0]; }).slice(0, 10);
+          if (al.length) {
+            h += '<div style="font-weight:700;margin:10px 0 4px;">' + T('Kazanmaya yakın ödüller', 'Closest awards') + '</div><table style="width:100%;border-collapse:collapse;">';
+            al.forEach(function (x) { var v = x[1]; h += '<tr title="' + String(v[2]).replace(/"/g, '&quot;') + '"><td style="padding:2px 4px;border-top:1px solid #374151;">' + String(x[0]).replace(/</g, '&lt;') + '<div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + '</div></td><td style="padding:2px 4px;border-top:1px solid #374151;text-align:right;white-space:nowrap;"><b>' + Math.round(v[0]) + '%</b><div style="font-size:10px;color:#9ca3af;">' + v[1] + '</div></td></tr>'; });
+            h += '</table><div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Awards sayfasında açtığın bölümlerden okunur.', 'Read from the Awards page sections you opened.') + '</div>';
+          } else h += '<div style="margin-top:8px;color:#9ca3af;">' + T('Ödül ilerlemesi için Awards sayfasını (Honors/Medals) aç.', 'Open the Awards page (Honors/Medals) to load award progress.') + '</div>';
+        }
         pn.innerHTML = h; return;
       }
       var m = mtRows(j); h += '<div style="color:#9ca3af;margin-bottom:4px;">' + T('Upgrade isimleri için bir kez Merits sayfasını aç.', 'Open the Merits page once to get upgrade names.') + '</div>';
@@ -4731,6 +4740,25 @@
       pn.innerHTML = h;
     } catch (e) { pn.textContent = T('Alınamadı: ', 'Could not load: ') + ((e && e.message) || '?'); }
   }
+  function mtAwScrape() {
+    var lis = document.querySelectorAll('li[class*="locked___"]'), mds = document.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length) return;
+    var c = gmGet('merit-aw', null) || { d: {} }, ch = false;
+    mds.forEach(function (li) {
+      var pp = li.querySelector('p[class*="progress___"]'), mm = pp && /([\d,\.]+)\s*\/\s*([\d,\.]+)/.exec(pp.textContent), ti = li.querySelector('[class*="title___"]'), ds = li.querySelector('[class*="description___"]');
+      if (!mm || !ti) return;
+      var a = parseFloat(mm[1].replace(/,/g, '')), b = parseFloat(mm[2].replace(/,/g, '')), nm = ti.textContent.trim();
+      var e = [b ? Math.round(a / b * 1000) / 10 : 0, mm[1] + ' / ' + mm[2], ds ? ds.textContent.replace(/\s+/g, ' ').trim() : '', 'm'];
+      if (JSON.stringify(c.d[nm]) !== JSON.stringify(e)) { c.d[nm] = e; ch = true; }
+    });
+    lis.forEach(function (li) {
+      var pe = li.querySelector('[class*="progressEffect"]'), nm = (li.getAttribute('aria-label') || '').replace(/\.\s*Rarity.*$/i, '').trim();
+      if (!pe || !nm) return;
+      var pc = parseFloat(pe.style.width) || 0, tx = (li.textContent || '').match(/([\d,\.]+)\s*\/\s*([\d,\.]+)/), ds = li.querySelector('[class*="description"]');
+      var e = [pc, tx ? tx[1] + ' / ' + tx[2] : '', ds ? ds.textContent.replace(/\s+/g, ' ').trim() : '', /medal/i.test(location.hash + location.search) ? 'm' : ''];
+      if (JSON.stringify(c.d[nm]) !== JSON.stringify(e)) { c.d[nm] = e; ch = true; }
+    });
+    if (ch) { c.at = Date.now(); gmSet('merit-aw', c); }
+  }
   function mtScrape() {
     var lis = document.querySelectorAll('li[aria-label*="Upgraded:"]'); if (lis.length < 5) return;
     var out = [];
@@ -4738,7 +4766,7 @@
     if (out.length >= 5) { var old = gmGet('merit-ups', null); if (!old || JSON.stringify(old.d) !== JSON.stringify(out)) gmSet('merit-ups', { at: Date.now(), d: out }); }
   }
   function mtTick() {
-    mtScrape();
+    mtScrape(); mtAwScrape();
     var a = document.getElementById('th-mt');
     if (!ui.mtr) { if (a) a.parentNode.remove(); var op = document.getElementById('th-mtp'); if (op) op.remove(); return; }
     if (a && a.isConnected) return;
@@ -4856,7 +4884,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.10';
+  var TH_VER = '1.6.11';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -4874,7 +4902,8 @@
     ['1.6.7', 'o', ['OC sayfasında ağırlıklı başarı değeri (tornprobability.com rol ağırlıkları).'], ['Weighted success on the OC page (role weights from tornprobability.com).']],
     ['1.6.8', 'n', ['Güncelleme notu penceresi: her yeni sürümde bir kez açılır.'], ['Patch notes window: shown once per new version.']],
     ['1.6.9', 'n', ['Güncelleme notlarında yeniliğin hangi ayarlarda olduğu yazıyor; atlanan sürümler sırayla gösteriliyor (Sonraki / Önceki).'], ['Patch notes now say where each feature is in the settings; skipped versions are shown one by one (Next / Back).']],
-    ['1.6.10', 'o', ['Merit Tracker: upgrade isimleri ve seviyeleri (Life 4 / 10 gibi), boşta ve harcanan merit. Merits sayfasını bir kez açman yeter.'], ['Merit Tracker: upgrade names and levels (e.g. Life 4 / 10), available and used merits. Open the Merits page once.']]
+    ['1.6.10', 'o', ['Merit Tracker: upgrade isimleri ve seviyeleri (Life 4 / 10 gibi), boşta ve harcanan merit. Merits sayfasını bir kez açman yeter.'], ['Merit Tracker: upgrade names and levels (e.g. Life 4 / 10), available and used merits. Open the Merits page once.']],
+    ['1.6.11', 'o', ['Merit Tracker: Awards sayfasında açtığın honor ve medalların ilerlemesinden "kazanmaya en yakın ödüller" listesi.'], ['Merit Tracker: "closest awards" list built from the honors and medals progress on the Awards page you opened.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
