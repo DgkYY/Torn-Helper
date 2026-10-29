@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.41
+// @version      1.5.43
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.41', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.43', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3383,7 +3383,7 @@
   window.addEventListener('resize', function () { try { applyMiniPos(); applyUi(); } catch (e) {} });
 
   /* Item Market: ürün satırlarına Doldur düğmesi (yalnızca fiyat ve adedi yazar, listeleme düğmesine basmaz) */
-  var UNIQUE_TYPES = ['Primary', 'Secondary', 'Melee', 'Defensive'], mfMap = new Map(), mfTimer = 0, mfBusy = false;
+  var UNIQUE_TYPES = ['Primary', 'Secondary', 'Melee', 'Defensive'], mfRecs = [], mfMap = new Map(), mfTimer = 0, mfBusy = false;
   function mfSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function mfTake() { for (var i = 0; i < 12; i++) { if (rateTake()) return true; await mfSleep(2000); } return false; }
   async function mfIds(key) {
@@ -3479,8 +3479,27 @@
     return null;
   }
   function mfBtnCss(el, bg) { el.style.cssText = 'margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid rgba(0,0,0,.4);background:' + bg + ';color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;vertical-align:middle;'; }
+  function mfPlace() {
+    for (var i = mfRecs.length - 1; i >= 0; i--) {
+      var r = mfRecs[i];
+      if (!document.contains(r.inp)) { r.wrap.remove(); mfMap.delete(r.wrap.firstChild); mfRecs.splice(i, 1); continue; }
+      var rc = r.inp.getBoundingClientRect();
+      if (!rc.width || !rc.height) { r.wrap.style.display = 'none'; continue; }
+      r.wrap.style.display = 'inline-block';
+      var w = r.wrap.offsetWidth || 90, h = r.wrap.offsetHeight || 22;
+      var left = Math.min(rc.right + 8, window.innerWidth - w - 4);
+      r.wrap.style.left = Math.round(left + window.scrollX) + 'px';
+      r.wrap.style.top = Math.round(rc.top + window.scrollY + (rc.height - h) / 2) + 'px';
+    }
+    var fa = root.getElementById('x-fa'), n = mfRecs.length;
+    if (fa) { fa.hidden = !n || !ui.mf; fa.textContent = T('Hepsini doldur', 'Fill all') + ' (' + n + ')'; }
+  }
+  setInterval(function () { if (mfRecs.length) mfPlace(); }, 400);
+  window.addEventListener('scroll', function () { if (mfRecs.length) mfPlace(); }, { passive: true });
+  window.addEventListener('resize', function () { if (mfRecs.length) mfPlace(); });
   function mfClean() {
-    var els = document.querySelectorAll('.th-fill, .th-info, .th-pop');
+    mfRecs = [];
+    var els = document.querySelectorAll('.th-wrap, .th-pop');
     for (var i = 0; i < els.length; i++) els[i].remove();
     var ms = document.querySelectorAll('input[data-thfill]');
     for (var j = 0; j < ms.length; j++) ms[j].removeAttribute('data-thfill');
@@ -3501,8 +3520,11 @@
         inp.setAttribute('data-thfill', '1');
         var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'th-fill'; bt.textContent = T('Doldur', 'Fill'); mfBtnCss(bt, '#2563eb');
         var info = document.createElement('button'); info.type = 'button'; info.className = 'th-info'; info.textContent = '▾'; info.title = T('En ucuz 5 ilan', 'Cheapest 5 listings'); mfBtnCss(info, '#475569');
-        var an = mfAnchor(inp, name), host = an || inp;
-        host.parentNode.insertBefore(info, host.nextSibling); host.parentNode.insertBefore(bt, host.nextSibling);
+        var wrap = document.createElement('span'); wrap.className = 'th-wrap';
+        wrap.style.cssText = 'position:absolute;z-index:99990;display:none;white-space:nowrap;line-height:1;';
+        info.style.marginLeft = '4px'; bt.style.marginLeft = '0';
+        wrap.appendChild(bt); wrap.appendChild(info); document.body.appendChild(wrap);
+        mfRecs.push({ inp: inp, wrap: wrap });
         var run = async function (pick) {
           var old = bt.textContent; bt.textContent = '…';
           try { var r = await mfFill(inp, qty, name, pick); bt.textContent = old; if (r.note) toast(name, r.note, 12000, r.uniq ? { label: T('Bir daha gösterme', "Don't show again"), fn: function () { ui.mfWarn = false; saveUi(); applyUi(); } } : null); return r; }
@@ -3532,8 +3554,7 @@
         });
       })(inputs[i]);
     }
-    var fa = root.getElementById('x-fa'), n = document.querySelectorAll('.th-fill').length;
-    if (fa) { fa.hidden = !n; fa.textContent = T('Hepsini doldur', 'Fill all') + ' (' + n + ')'; }
+    mfPlace();
   }
   function mfSoon() { if (!ui.mf || mfTimer) return; mfTimer = setTimeout(mfScan, 350); }
   try { new MutationObserver(mfSoon).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
@@ -3542,7 +3563,7 @@
   root.getElementById('x-fa').addEventListener('click', async function () {
     if (mfBusy) return;
     mfBusy = true;
-    var btns = Array.prototype.slice.call(document.querySelectorAll('.th-fill')), done = 0;
+    var btns = mfRecs.map(function (r) { return r.wrap.firstChild; }), done = 0;
     for (var i = 0; i < btns.length; i++) { var f = mfMap.get(btns[i]); if (f) { var r = await f(null); if (r) done++; await mfSleep(300); } }
     mfBusy = false;
     toast('Torn-Helper', T(done + ' ürün dolduruldu. Listelemeden önce fiyatları kontrol et.', done + ' items filled. Check the prices before listing.'), 8000);
