@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.73
+// @version      1.5.76
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.73', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.76', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3613,7 +3613,13 @@
     var t = ev.target, el = t && t.closest ? t.closest('[class*="bar___"]') : null;
     if (!el || (t.closest && t.closest('a'))) return;
     var k = sbBarKind(el);
-    if (k) location.href = SB_LINKS[k];
+    if (!k) return;
+    if (k === 'nerve') {
+      var bv = el.querySelectorAll('[class*="barValue___"]')[0], cur = bv ? parseInt(String(bv.textContent).replace(/[^\d\/]/g, '').split('/')[0], 10) : NaN;
+      location.href = (cur <= 10) ? SB_LINKS.nerve : '/crimes.php';
+      return;
+    }
+    location.href = SB_LINKS[k];
   }, true);
   function sbCdData() { var d = gmGet('sb-cd', null); return d && typeof d === 'object' ? d : null; }
   function sbFmt(s) {
@@ -4241,6 +4247,10 @@
       }
     } finally { stkBusy = false; }
   }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest('a[data-thfx]') : null;
+    if (b) { ev.preventDefault(); ev.stopImmediatePropagation(); }
+  }, true);
   var fcxId = '', fcxSame = null, fcxBusy = false;
   async function fcxTick() {
     var id = prId(), old = document.querySelectorAll('.th-fcx');
@@ -4261,7 +4271,8 @@
     for (var oz = 0; oz < old.length; oz++) if (!btn || old[oz].parentNode !== btn) old[oz].remove();
     if (!btn) return;
     var mark = btn.querySelectorAll('.th-fcx')[0];
-    if (!fcxSame) { if (mark) mark.remove(); return; }
+    if (!fcxSame) { if (mark) mark.remove(); btn.style.background = ''; btn.style.cursor = ''; btn.removeAttribute('data-thfx'); var ic0 = btn.querySelectorAll('svg'); for (var q0 = 0; q0 < ic0.length; q0++) ic0[q0].style.opacity = ''; return; }
+    btn.style.cursor = 'not-allowed'; btn.setAttribute('data-thfx', '1'); var ic1 = btn.querySelectorAll('svg'); for (var q1 = 0; q1 < ic1.length; q1++) ic1[q1].style.opacity = '0.3';
     if (mark) return;
     btn.style.position = 'relative';
     mark = document.createElement('span'); mark.className = 'th-fcx';
