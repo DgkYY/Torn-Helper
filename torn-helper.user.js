@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.5.69
+// @version      1.5.70
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2886,7 +2886,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.5.69', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.5.70', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4084,13 +4084,12 @@
       if (g.t === 'one') {
         var X = g.a, sec = 0; for (var q in GYS_TR) if (q !== X && st[q] > sec) sec = st[q];
         var mn = Math.ceil(sec * 1.25), met = st[X] >= mn;
-        out[X].push(met ? { ok: true, tx: '✓ ' + g.n + ': ' + T('hedef ', 'target ') + f(mn) } : { ok: false, tx: g.n + ': ' + T('hedef ', 'target ') + f(mn) + ' (' + T('eksik ', 'missing ') + f(mn - st[X]) + ')' });
-        if (met) for (var o in GYS_TR) if (o !== X) out[o].push({ ok: true, tx: g.n + ': +' + f(Math.floor(st[X] / 1.25) - st[o]) + T(' kasabilirsin', ' more allowed') });
+        out[X].push(met ? { ok: true, tx: '✓ ' + g.n } : { ok: false, tx: g.n + ': −' + f(mn - st[X]) });
+        if (met) for (var o in GYS_TR) if (o !== X) out[o].push({ ok: true, tx: g.n + ': +' + f(Math.floor(st[X] / 1.25) - st[o]) });
       } else {
         var A = st[g.a[0]] + st[g.a[1]], B = st[g.b[0]] + st[g.b[1]], mA = Math.ceil(B * 1.25), m2 = A >= mA;
-        var sa = GYS_SH[g.a[0]] + '+' + GYS_SH[g.a[1]], sb = GYS_SH[g.b[0]] + '+' + GYS_SH[g.b[1]];
-        g.a.forEach(function (x) { out[x].push(m2 ? { ok: true, tx: '✓ ' + g.n + ': ' + sa + ' ' + f(A) + ' / ' + f(mA) } : { ok: false, tx: g.n + ': ' + sa + ' ' + T('hedef ', 'target ') + f(mA) + ' (' + T('eksik ', 'missing ') + f(mA - A) + ')' }); });
-        if (m2) g.b.forEach(function (x) { out[x].push({ ok: true, tx: g.n + ': ' + sb + ' ' + T('toplamına +', 'combined +') + f(Math.floor(A / 1.25) - B) + T(' kasabilirsin', ' more allowed') }); });
+        g.a.forEach(function (x) { out[x].push(m2 ? { ok: true, tx: '✓ ' + g.n } : { ok: false, tx: g.n + ': −' + f(mA - A) }); });
+        if (m2) g.b.forEach(function (x) { out[x].push({ ok: true, tx: g.n + ': +' + f(Math.floor(A / 1.25) - B) }); });
       }
     });
     return out;
