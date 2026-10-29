@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.16
+// @version      1.6.17
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.16', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.17', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4721,9 +4721,8 @@
       var aw = gmGet('merit-aw', null), al = aw && aw.d ? Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) { return x[1][0] > 0 && x[1][0] < 100; }).sort(function (x, y) { return y[1][0] - x[1][0]; }).slice(0, 12) : [];
       h += '<div style="font-weight:700;margin:4px 0;">' + T('Merit kazanmaya en yakın ödüller', 'Closest awards (merit sources)') + '</div>';
       if (al.length) {
-        h += '<table style="width:100%;border-collapse:collapse;">';
-        al.forEach(function (x) { var v = x[1]; h += '<tr title="' + String(v[2]).replace(/"/g, '&quot;') + '"><td style="' + TD + '">' + String(x[0]).replace(/</g, '&lt;') + ' <span style="font-size:10px;color:#9ca3af;">' + (v[3] === 'm' ? 'medal' : 'honor') + '</span><div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + '</div></td><td style="' + TD + 'text-align:right;white-space:nowrap;"><b style="color:' + (v[0] >= 80 ? '#86efac' : '#e5e7eb') + ';">' + Math.round(v[0]) + '%</b><div style="font-size:10px;color:#9ca3af;">' + v[1] + '</div></td></tr>'; });
-        h += '</table><div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Awards sayfasında açtığın bölümlerden (Honors/Medals) okunur.', 'Read from the Awards page sections (Honors/Medals) you opened.') + '</div>';
+        al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
+        h += '<div style="margin-top:4px;color:#9ca3af;font-size:11px;">' + T('Awards sayfasında açtığın bölümlerden (Honors/Medals) okunur.', 'Read from the Awards page sections (Honors/Medals) you opened.') + '</div>';
       } else h += '<div style="color:#9ca3af;">' + T('Awards sayfasını (Honors ve Medals sekmeleri) bir kez aç, ilerleme buraya gelir.', 'Open the Awards page (Honors and Medals tabs) once to load progress.') + '</div>';
       var st = gmGet('merit-aw-st', null);
       h += '<div style="margin-top:6px;font-size:11px;color:#9ca3af;">' + (st ? String(st.m).replace(/</g, '&lt;') : '') + ' <a href="#" data-scan="1" style="color:#60a5fa;">' + T('Şimdi tara', 'Scan now') + '</a></div>';
@@ -4743,6 +4742,10 @@
       h += '</table>';
       pn.innerHTML = h;
     } catch (e) { pn.textContent = T('Alınamadı: ', 'Could not load: ') + ((e && e.message) || '?'); }
+  }
+  function mtPct(p) { return p >= 99.95 ? '99.9' : (p >= 10 ? String(Math.floor(p)) : String(Math.round(p * 10) / 10)); }
+  function mtAwRow(nm, v) {
+    return '<div title="' + String(v[2]).replace(/"/g, '&quot;') + '" style="padding:3px 0;border-top:1px solid #374151;"><div style="display:flex;justify-content:space-between;gap:6px;"><span style="min-width:0;">' + String(nm).replace(/</g, '&lt;') + ' <span style="font-size:10px;color:#9ca3af;">' + (v[3] === 'm' ? 'medal' : 'honor') + '</span></span><b style="color:' + (v[0] >= 80 ? '#86efac' : '#e5e7eb') + ';white-space:nowrap;">' + mtPct(v[0]) + '%</b></div><div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + (v[1] ? ' · ' + v[1] : '') + '</div></div>';
   }
   /* Merit: bulunduğun sayfaya uygun ödüllerin ilerlemesini otomatik göster */
   var MT_CTX = [
@@ -4778,6 +4781,10 @@
     for (var i = 0; i < MT_CTX.length; i++) if (MT_CTX[i][1].test(url)) { ctx = MT_CTX[i]; break; }
     if (!ctx) { mtLast = ''; mtCountry = ''; if (old) old.remove(); return; }
     var bx = document.getElementById('th-sbx2'); if (old && bx && old.parentNode === bx.parentNode && (old.compareDocumentPosition(bx) & 4)) bx.parentNode.insertBefore(old, bx.nextSibling);
+    if (ctx[0] === 'travel') {
+      var tm = /(?:^|\n)\s*To:\s*([A-Za-z ]+?)\s*(?:\n|$)/.exec(document.body.innerText || '');
+      if (tm) for (var ci = 0; ci < MT_COUNTRIES.length; ci++) if (MT_COUNTRIES[ci].toLowerCase() === tm[1].trim().toLowerCase()) { mtCountry = MT_COUNTRIES[ci]; break; }
+    }
     var key = ctx[0] + (ctx[0] === 'travel' ? mtCountry : '');
     if (key === mtLast) return;
     var aw = gmGet('merit-aw', null); if (!aw || !aw.d) aw = { d: {} };
@@ -4794,7 +4801,7 @@
     var host = document.querySelectorAll('[class*="userInformation___"]')[0];
     pn.style.cssText = host ? 'box-sizing:border-box;width:100%;margin-top:6px;padding:6px 8px;background:#1f2937;border:1px solid #4b5563;border-radius:4px;font:12px Arial,sans-serif;color:#e5e7eb;' : 'position:fixed;z-index:2147482000;right:14px;bottom:14px;width:270px;max-height:50vh;overflow:auto;padding:8px 10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;';
     var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ctx[3]) + (ctx[0] === 'travel' && mtCountry ? ' · ' + mtCountry : '') + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
-    al.forEach(function (x) { var v = x[1]; h += '<div style="padding:3px 0;border-top:1px solid #374151;"><div style="display:flex;justify-content:space-between;gap:6px;"><span>' + String(x[0]).replace(/</g, '&lt;') + ' <span style="font-size:10px;color:#9ca3af;">' + (v[3] === 'm' ? 'medal' : 'honor') + '</span></span><b style="color:' + (v[0] >= 80 ? '#86efac' : '#e5e7eb') + ';white-space:nowrap;">' + Math.round(v[0]) + '% · ' + v[1] + '</b></div><div style="font-size:10px;color:#9ca3af;">' + String(v[2]).replace(/</g, '&lt;') + '</div></div>'; });
+    al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
     if (!al.length) { var st2 = gmGet('merit-aw-st', null); h += '<div style="color:#9ca3af;">' + T('Bu sayfa için kayıtlı ödül yok. ', 'No stored awards for this page. ') + (st2 ? String(st2.m).replace(/</g, '&lt;') : '') + '</div>'; }
     pn.innerHTML = h;
     pn.addEventListener('click', function (e) { if (e.target && e.target.getAttribute && e.target.getAttribute('data-x')) pn.remove(); });
@@ -4845,8 +4852,14 @@
   setTimeout(function () { mtFullScan(); setInterval(mtFullScan, 600000); }, 8000);
   function mtAwScrape(doc) {
     doc = doc || document;
-    var lis = doc.querySelectorAll('li[class*="locked___"]'), mds = doc.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length) return;
+    var lis = doc.querySelectorAll('li[class*="locked___"]'), mds = doc.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length && !doc.querySelector('li[class*="progressZero"]')) return;
     var c = gmGet('merit-aw', null) || { d: {} }, ch = false;
+    doc.querySelectorAll('li[class*="progressZero"]').forEach(function (li) {
+      var ds0 = li.querySelector('[class*="description"]'), nm0 = (li.getAttribute('aria-label') || '').replace(/\.\s*Rarity.*$/i, '').trim();
+      if (!ds0 || !nm0) return;
+      var e0 = [0, '', ds0.textContent.replace(/\s+/g, ' ').trim(), 'h'];
+      if (JSON.stringify(c.d[nm0]) !== JSON.stringify(e0) && !(c.d[nm0] && c.d[nm0][0] > 0)) { c.d[nm0] = e0; ch = true; }
+    });
     mds.forEach(function (li) {
       var pp = li.querySelector('p[class*="progress___"]'), mm = pp && /([\d,\.]+)\s*\/\s*([\d,\.]+)/.exec(pp.textContent), ti = li.querySelector('[class*="title___"]'), ds = li.querySelector('[class*="description___"]');
       if (!mm || !ti) return;
@@ -4992,7 +5005,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.16';
+  var TH_VER = '1.6.17';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5016,7 +5029,8 @@
     ['1.6.13', 'o', ['Merit Tracker: uçuş, saldırı, gym, crimes gibi sayfalara girince o sayfayla ilgili ödüllerin (örn. Güney Afrika için uçarken Travel ödüllerinin) ilerlemesi kenar çubuğunda, Bağlantılar bölümünün altında otomatik açılır. Kapatmak için ayarlardaki yeni kutuyu kaldır.'], ['Merit Tracker: on pages like travel, attack, gym and crimes, a small popup automatically shows progress of the awards related to that page (e.g. Travel awards when flying to South Africa). Untick the new setting to turn it off.']],
     ['1.6.14', 'o', ['Merit Tracker: ödül ilerlemesi artık Awards sayfasını elle gezmeden otomatik toplanıyor (arka planda, 6 saatte bir); popup kenar çubuğunda Bağlantılar\u0027ın altında açılıyor.'], ['Merit Tracker: award progress is now collected automatically in the background (every 6 hours) without visiting the Awards page; the popup opens in the sidebar under Links.']],
     ['1.6.15', 'b', ['Ayarlar toparlandı: yeni "Bildirimler" bölümü (enerji, ilaç, tıbbi, booster, chain, hastane olaylarını tek tek seçebilirsin, ses ve ön uyarı da burada); Kenar çubuğu ve Diğer sayfalar alt başlıklara bölündü.'], ['Settings reorganised: new "Notifications" section (pick energy, drug, medical, booster, chain and hospital events individually; sound and early warning are here too); Sidebar and Other pages are split into sub-sections.']],
-    ['1.6.16', 'o', ['Merit Tracker satırı artık Notlar/Bağlantılar gibi kenar çubuğunda Bağlantılar\u0027ın altında; ödül taraması arka planda başarısız olursa Awards sayfasını açınca orada otomatik taranır; popupta "Şimdi tara" ve durum yazısı var.'], ['The Merit Tracker row now sits under Links in the sidebar; if the background scan fails, opening the Awards page scans it there automatically; the popup has a "Scan now" link and a status line.']]
+    ['1.6.16', 'o', ['Merit Tracker satırı artık Notlar/Bağlantılar gibi kenar çubuğunda Bağlantılar\u0027ın altında; ödül taraması arka planda başarısız olursa Awards sayfasını açınca orada otomatik taranır; popupta "Şimdi tara" ve durum yazısı var.'], ['The Merit Tracker row now sits under Links in the sidebar; if the background scan fails, opening the Awards page scans it there automatically; the popup has a "Scan now" link and a status line.']],
+    ['1.6.17', 'o', ['Merit Tracker: uçuş sayfasında seçtiğin ülke otomatik algılanıyor; henüz ilerlemesi sıfır olan honorlar da otomatik pencerede çıkıyor; satır düzeni daraltıldı, yüzdeler artık taşmıyor.'], ['Merit Tracker: the destination chosen on the travel page is detected automatically; honors with zero progress now show in the auto popup; rows are narrower and percentages no longer overflow.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
