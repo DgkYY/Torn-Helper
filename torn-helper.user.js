@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.17
+// @version      1.6.18
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.17', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.18', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4791,7 +4791,7 @@
     mtLast = key;
     var al = Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) {
       var t = x[0] + ' ' + x[1][2]; if (x[1][0] >= 100 || !ctx[2].test(t)) return false;
-      if (ctx[0] === 'travel' && mtCountry) return t.toLowerCase().indexOf(mtCountry.toLowerCase()) >= 0 || (mtCountry === 'UAE' && /arab/i.test(t));
+      if (ctx[0] === 'travel' && mtCountry) { var tl = t.toLowerCase(), mine = tl.indexOf(mtCountry.toLowerCase()) >= 0 || (mtCountry === 'UAE' && /arab|uae/i.test(t)); if (mine) return true; for (var q = 0; q < MT_COUNTRIES.length; q++) if (tl.indexOf(MT_COUNTRIES[q].toLowerCase()) >= 0) return false; return true; }
       return true;
     }).sort(function (a, b) { return b[1][0] - a[1][0]; }).slice(0, 6);
     if (old) old.remove();
@@ -4821,15 +4821,16 @@
       for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); }
     }
     if (first && first.click) first.click();
-    var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
+    var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.v = 3; cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
     mtStat(T('Tarama tamam: ', 'Scan done: ') + Object.keys(cc.d).length + T(' ödül', ' awards'));
   }
   async function mtFullScan(force) {
     if (mtFullBusy || !ui.mtr) return;
     var c = gmGet('merit-aw', null);
     if (!force) {
-      if (c && c.full && Date.now() - c.full < 6 * 3600000) return;
-      var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000) return;
+      if (c && c.full && c.v === 3 && Date.now() - c.full < 6 * 3600000) return;
+      var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000 && !(c && c.v !== 3 && !gmGet('merit-aw-v3', 0))) return;
+      if (c && c.v !== 3) gmSet('merit-aw-v3', 1);
     }
     gmSet('merit-aw-try', Date.now());
     mtFullBusy = true; mtStat(T('Tarama sürüyor…', 'Scanning…'));
@@ -5005,7 +5006,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.17';
+  var TH_VER = '1.6.18';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5030,7 +5031,8 @@
     ['1.6.14', 'o', ['Merit Tracker: ödül ilerlemesi artık Awards sayfasını elle gezmeden otomatik toplanıyor (arka planda, 6 saatte bir); popup kenar çubuğunda Bağlantılar\u0027ın altında açılıyor.'], ['Merit Tracker: award progress is now collected automatically in the background (every 6 hours) without visiting the Awards page; the popup opens in the sidebar under Links.']],
     ['1.6.15', 'b', ['Ayarlar toparlandı: yeni "Bildirimler" bölümü (enerji, ilaç, tıbbi, booster, chain, hastane olaylarını tek tek seçebilirsin, ses ve ön uyarı da burada); Kenar çubuğu ve Diğer sayfalar alt başlıklara bölündü.'], ['Settings reorganised: new "Notifications" section (pick energy, drug, medical, booster, chain and hospital events individually; sound and early warning are here too); Sidebar and Other pages are split into sub-sections.']],
     ['1.6.16', 'o', ['Merit Tracker satırı artık Notlar/Bağlantılar gibi kenar çubuğunda Bağlantılar\u0027ın altında; ödül taraması arka planda başarısız olursa Awards sayfasını açınca orada otomatik taranır; popupta "Şimdi tara" ve durum yazısı var.'], ['The Merit Tracker row now sits under Links in the sidebar; if the background scan fails, opening the Awards page scans it there automatically; the popup has a "Scan now" link and a status line.']],
-    ['1.6.17', 'o', ['Merit Tracker: uçuş sayfasında seçtiğin ülke otomatik algılanıyor; henüz ilerlemesi sıfır olan honorlar da otomatik pencerede çıkıyor; satır düzeni daraltıldı, yüzdeler artık taşmıyor.'], ['Merit Tracker: the destination chosen on the travel page is detected automatically; honors with zero progress now show in the auto popup; rows are narrower and percentages no longer overflow.']]
+    ['1.6.17', 'o', ['Merit Tracker: uçuş sayfasında seçtiğin ülke otomatik algılanıyor; henüz ilerlemesi sıfır olan honorlar da otomatik pencerede çıkıyor; satır düzeni daraltıldı, yüzdeler artık taşmıyor.'], ['Merit Tracker: the destination chosen on the travel page is detected automatically; honors with zero progress now show in the auto popup; rows are narrower and percentages no longer overflow.']],
+    ['1.6.18', 'o', ['Merit Tracker: ödül verisi yenilenince (sıfır ilerlemeli honorlar dahil) bir kez otomatik yeniden taranır; ülke seçilince ülkeye özel ve genel uçuş ödülleri birlikte gösterilir.'], ['Merit Tracker: award data is rescanned once automatically (including zero-progress honors); with a destination chosen, country-specific and generic travel awards are shown together.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
