@@ -13,6 +13,9 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
   - Queue mode: shows the next target and an Attack button. Optional mug mode puts high-networth targets first and skips anyone mugged in the last 12 hours.
   - Fair Fight (FF) values and estimated stats via [FF Scouter](https://ffscouter.com), easy-target finder with no repeats, networth and mug-ceiling labels.
   - Halloween treat counter (collapsed by default), energy display, "reset today" button.
+  - The treat counter reads your real treats collected and basket level from Torn while the Halloween event runs.
+  - Optional: while the Halloween event is on and your energy is 25 or more, an Attack button appears next to the open button. It refreshes the next target's status, switches to the mini window and opens the attack page. You still press the attack on Torn yourself. Off by default (it needs one background request per minute); it disappears when the event ends.
+  - Optional: Retal. Every 30 or 60 seconds the script reads your faction member list. When a member is hospitalized by someone outside the faction and that attacker is Okay, a Retal button appears under the open button and opens the attack page. Hospitalized-by-someone (hidden) attackers are skipped. Off by default (2 background requests per minute). Torn's wiki says a retaliation hit must be hospitalisation only and gives a 1.5x multiplier; the button disappears after 5 minutes.
 - **Ranked War mode**
   - Fetches the enemy faction's members, tracks hospital time live, sorts by FF and gives you the next target.
 - **Faction management**
@@ -22,8 +25,17 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
   - Backup and restore of all your data.
 - **Abroad prices**
   - Compares abroad shop stock with Torn market values and calculates profit per flight and per hour.
+  - The carrying capacity is read from the item boxes on the travel page (boxes minus the locked ones); untick the option to enter it by hand.
+  - Optional budget (or one click to use your wallet) limits how many items you can afford, so profit per flight reflects what you can really buy.
 - **Mini window**
   - Press Attack in the queue and the tool shrinks into a small window in the corner. The attack page opens in the same tab and the mini window shows the next target and an Attack button when you are done.
+
+- **Interface**
+  - Opens as a side panel; the Wide/Narrow button is remembered per mode (Faction management opens wide).
+  - The home screen shows a status strip with energy, nerve, cooldowns, the target queue and the time left in the running Torn event (read from Torn's own banner), plus a small status on each mode card.
+  - The Torn connection section folds away once a key is saved.
+  - The open button can be dragged anywhere and remembers its place. `Alt+Shift+T` or `Esc` opens and closes the panel. Optionally the button shows a dot when your energy is full (one background request per minute, off by default).
+  - The mini window can sit in any of the four corners.
 
 ## Install
 
@@ -37,7 +49,7 @@ Updates are picked up automatically by Tampermonkey.
 ## Setup
 
 1. Create a **Limited Access** API key in Torn: Settings → API Key.
-2. Open Torn-Helper, paste the key in the "Torn connection" section and save.
+2. Open Torn-Helper and paste the key in the "Torn connection" section of the home screen. You only enter it once there.
 3. Optional: paste your FF Scouter key. You must be registered on ffscouter.com for FF values to work.
 4. For the faction features your key needs Faction access, which usually means a leader or co-leader role.
 
@@ -78,6 +90,9 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
   - Sıra modu: sıradaki hedefi ve Saldır düğmesini gösterir. Mug modu açıksa networth'ü yüksek olanlar öne alınır, son 12 saatte mug ettiklerin atlanır.
   - [FF Scouter](https://ffscouter.com) ile Fair Fight (FF) ve tahmini stat, tekrar etmeyen kolay hedef bulucu, networth ve mug tavanı etiketleri.
   - Halloween tatlı sayacı (varsayılan kapalı), enerji göstergesi, "bugünü sıfırla" düğmesi.
+  - Halloween event'i sürerken tatlı sayacı, Torn'daki gerçek tatlı sayını ve sepet seviyeni okur.
+  - İsteğe bağlı: Halloween sürerken enerjin 25 ve üstündeyse açma düğmesinin yanında Saldır butonu çıkar. Sıradaki hedefin durumunu tazeler, mini pencereye geçer ve saldırı sayfasını açar. Saldırıyı yine Torn'da sen başlatırsın. Varsayılan kapalıdır (dakikada bir arka plan isteği ister), event bitince kendiliğinden kaybolur.
+  - İsteğe bağlı: Retal. Script 30 ya da 60 saniyede bir faction üye listeni okur. Bir üyen faction dışından biri tarafından hastaneye düşürülürse ve saldıran Okay durumundaysa açma düğmesinin altında Retal butonu çıkar, tıklayınca saldırı sayfasını açar. Saldıranı gizli olanlar atlanır. Varsayılan kapalıdır (dakikada 2 arka plan isteği). Torn wiki'ye göre retal vuruşu sadece hastaneye düşürme olmalı ve 1.5x çarpan verir; buton 5 dakika sonra kaybolur.
 - **Ranked War modu**
   - Rakip faction üyelerini çeker, hastane süresini canlı izler, FF'ye göre sıralar ve sıradaki hedefi verir.
 - **Faction yönetimi**
@@ -87,8 +102,17 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
   - Tüm verinin yedeklenmesi ve geri yüklenmesi.
 - **Yurtdışı fiyatları**
   - Yurtdışı mağaza stoklarını Torn piyasa değeriyle karşılaştırır, uçuş başına ve saat başına kârı hesaplar.
+  - Taşıma kapasitesi uçuş sayfasındaki eşya kutularından okunur (kutu sayısı eksi kilitli kutular), elle girmek için seçeneği kapatabilirsin.
+  - İsteğe bağlı bütçe (ya da tek tıkla cüzdanın) kaç ürün alabileceğini sınırlar, böylece uçuş başı kâr gerçekten alabileceğin miktara göre hesaplanır.
 - **Mini pencere**
   - Sıradan Saldır'a basınca araç köşede küçük bir pencereye dönüşür. Saldırı sayfası aynı sekmede açılır, saldırı bitince mini pencere sıradaki hedefi ve Saldır düğmesini gösterir.
+
+- **Arayüz**
+  - Yan panel olarak açılır, Geniş/Dar düğmesi her mod için hatırlanır (Faction yönetimi geniş açılır).
+  - Ana ekranda enerji, nerve, cooldown, hedef kuyruğu ve süren Torn event'inin kalan süresini (Torn'un kendi banner'ından okunur) gösteren bir durum şeridi ve her mod kartında küçük bir durum bilgisi var.
+  - Torn bağlantısı bölümü anahtar kaydedilince kendiliğinden katlanır.
+  - Açma düğmesi istediğin yere sürüklenir ve yerini hatırlar. `Alt+Shift+T` ya da `Esc` paneli açıp kapatır. İsteğe bağlı olarak enerjin dolunca düğmede bir nokta çıkar (dakikada bir arka plan isteği, varsayılan kapalı).
+  - Mini pencere dört köşeden birine konabilir.
 
 ## Kurulum
 
@@ -102,7 +126,7 @@ Güncellemeleri Tampermonkey kendiliğinden alır.
 ## Ayarlar
 
 1. Torn'da **Limited Access** seviyesinde bir API anahtarı oluştur: Ayarlar → API Key.
-2. Torn-Helper'ı aç, "Torn bağlantısı" bölümüne anahtarı yapıştırıp kaydet.
+2. Torn-Helper'ı aç, ana ekrandaki "Torn bağlantısı" bölümüne anahtarı yapıştırıp kaydet. Başka sayfalarda tekrar girmen gerekmez.
 3. İsteğe bağlı: FF Scouter anahtarını da yapıştır. FF değerlerinin çalışması için ffscouter.com'da kayıtlı olman gerekir.
 4. Faction özellikleri için anahtarında Faction erişimi olmalı, bu genelde lider ya da yetkili üyede bulunur.
 
