@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.26
+// @version      1.6.27
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.26', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.27', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4745,16 +4745,17 @@
   }
   var MT_STAT = { 'Argentina': 'argtravel', 'Mexico': 'mextravel', 'UAE': 'dubtravel', 'United Arab Emirates': 'dubtravel', 'Hawaii': 'hawtravel', 'Japan': 'japtravel', 'United Kingdom': 'lontravel', 'South Africa': 'soutravel', 'Switzerland': 'switravel', 'China': 'chitravel', 'Cayman Islands': 'caytravel', 'Canada': 'cantravel' };
   var MT_RULES = [
-    [/finishing hits? with rifles?/i, ['rifleshits']], [/finishing hits? with shotguns?/i, ['shotgunhits']], [/finishing hits? with pistols?/i, ['pistolhits']],
-    [/finishing hits? with smgs?/i, ['smghits']], [/finishing hits? with (fists|fist)/i, ['h2hhits']], [/finishing hits? with clubbing/i, ['axehits', 'clubbedhits']],
-    [/finishing hits? with piercing/i, ['piercinghits']], [/finishing hits? with slashing/i, ['slashinghits']], [/finishing hits? with mechanical/i, ['mechanicalhits']],
-    [/finishing hits? with machine/i, ['machinehits', 'machinegunhits']], [/finishing hits? with heavy/i, ['heavyhits']], [/finishing hits? with temporary/i, ['temphits', 'temporaryhits']],
-    [/critical hits/i, ['attackcriticalhits', 'criticalhits']], [/successfully defend|defend against|win [\d,]+ defends/i, ['defendswon']], [/win [\d,]+ attacks?/i, ['attackswon']],
-    [/rounds/i, ['roundsfired']], [/refill your energy/i, ['refills', 'energyrefills']], [/refill your nerve/i, ['nerverefills']], [/travel abroad|travel [\d,]+ times|trips/i, ['traveltimes']],
-    [/collect [\d,]+ bount/i, ['bountiescollected']], [/organi[sz]ed crimes/i, ['organisedcrimes', 'organizedcrimes']], [/revive/i, ['revives']],
-    [/gain [\d,]+ strength/i, ['strength']], [/gain [\d,]+ speed/i, ['speed']], [/gain [\d,]+ dexterity/i, ['dexterity']], [/gain [\d,]+ defense/i, ['defense']], [/total stats/i, ['totalstats', 'total']],
-    [/mug/i, ['moneymugged']], [/hospitali[sz]e/i, ['attackshosp', 'hospitalized']], [/stalemate|draw/i, ['attacksdraw']], [/escape/i, ['attacksescaped', 'escapes']]
+    [/finishing hits? with rifles?/i, /rifle.*hit|hit.*rifle/], [/finishing hits? with shotguns?/i, /shotgun.*hit|hit.*shotgun/], [/finishing hits? with pistols?/i, /pistol.*hit|hit.*pistol/],
+    [/finishing hits? with smgs?/i, /smg.*hit|hit.*smg|submachine/], [/finishing hits? with (fists|fist)/i, /h2h|hand.*hit|fist|kick/], [/finishing hits? with clubbing/i, /club.*hit|hit.*club|axe/],
+    [/finishing hits? with piercing/i, /pierc/], [/finishing hits? with slashing/i, /slash/], [/finishing hits? with mechanical/i, /mechanical/],
+    [/finishing hits? with machine/i, /machine.*hit|hit.*machine/], [/finishing hits? with heavy/i, /heavy.*hit|hit.*heavy|artillery/], [/finishing hits? with temporary/i, /temp.*hit|hit.*temp|temporary/],
+    [/critical hits/i, /critical/], [/successfully defend against|win [\d,]+ defends/i, /defendswon$|defends\.won$|defends\.won\./], [/win [\d,]+ attacks?/i, /attackswon$|attacks\.won$/],
+    [/rounds/i, /roundsfired|rounds.*fired|fired.*rounds/], [/refill your energy/i, /energyrefill|refills?\.energy|^refills$/], [/refill your nerve/i, /nerverefill|refills?\.nerve/], [/travel abroad|travel [\d,]+ times|trips/i, /traveltimes|travel.*(times|total)$/],
+    [/collect [\d,]+ bount/i, /bountiescollected|bount.*collected/], [/organi[sz]ed crimes/i, /organi[sz]edcrimes|organi[sz]ed.*crimes/], [/revive/i, /revives/],
+    [/gain [\d,]+ strength/i, /(^|\.)strength$/], [/gain [\d,]+ speed/i, /(^|\.)speed$/], [/gain [\d,]+ dexterity/i, /(^|\.)dexterity$/], [/gain [\d,]+ defense/i, /(^|\.)defense$/], [/total stats/i, /totalstats|(^|\.)total$/],
+    [/mug/i, /moneymugged|mugged/], [/stalemate|draw/i, /draw/]
   ];
+  function mtFind(d, re) { var best = null; for (var k in d) if (re.test(k) && (best === null || k.length < best.length)) best = k; return best === null ? null : d[best]; }
   var mtTrvBusy = false;
   function mtTrvSt(m) { gmSet('merit-trv-st', m); var el = document.getElementById('th-mttrv'); if (el) el.textContent = m; }
   async function mtTrvLoad(force) {
@@ -4762,21 +4763,22 @@
     if (mtTrvBusy || !keyOk()) return;
     if (!force && ((c && Date.now() - c.at < 1800000) || (c && c.fail && Date.now() - c.fail < 600000))) return;
     mtTrvBusy = true;
-    var want = {}; Object.keys(MT_STAT).forEach(function (k) { want[MT_STAT[k]] = 1; }); MT_RULES.forEach(function (r) { r[1].forEach(function (k) { want[k] = 1; }); });
-    var tries = ['user/personalstats?stat=' + Object.keys(want).join(','), 'user/personalstats?cat=all'], out = {}, msg = '';
-    for (var ti = 0; ti < tries.length && !Object.keys(out).length; ti++) {
+    var tries = ['user/personalstats?stat=' + Object.keys(MT_STAT).map(function (k) { return MT_STAT[k]; }).filter(function (v, i2, a2) { return a2.indexOf(v) === i2; }).join(','), 'user/personalstats?cat=all'], out = {}, msg = '', nAll = 0;
+    for (var ti = 0; ti < tries.length; ti++) {
       try {
-        var j = await prApi(tries[ti]), seen = [];
+        var j = await prApi(tries[ti]);
         if (j && j.error) { msg = (j.error.error || 'API') + ' (' + (j.error.code != null ? j.error.code : '?') + ')'; continue; }
-        (function walk(o, d) {
-          if (!o || typeof o !== 'object' || d > 6) return;
-          if (Array.isArray(o)) { o.forEach(function (it) { if (it && typeof it === 'object' && it.name && typeof it.value === 'number') { if (seen.length < 6) seen.push(it.name); if (want[it.name]) out[it.name] = it.value; } else walk(it, d + 1); }); return; }
-          for (var k in o) { if (typeof o[k] === 'number') { if (seen.length < 6) seen.push(k); if (want[k]) out[k] = o[k]; } else walk(o[k], d + 1); }
-        })(j, 0);
-        if (!Object.keys(out).length) msg = T('Yanıtta beklenen alan yok. Örnek alanlar: ', 'No expected fields. Sample fields: ') + (seen.join(', ') || JSON.stringify(j).slice(0, 120));
+        var cnt = 0;
+        (function walk(o, d, path) {
+          if (!o || typeof o !== 'object' || d > 7 || cnt > 2500) return;
+          if (Array.isArray(o)) { o.forEach(function (it) { if (it && typeof it === 'object' && it.name && typeof it.value === 'number') { out[String(it.name).toLowerCase()] = it.value; cnt++; } else walk(it, d + 1, path); }); return; }
+          for (var k in o) { var pk = (path ? path + '.' : '') + String(k).toLowerCase(); if (typeof o[k] === 'number') { out[pk] = o[k]; if (!(pk.indexOf('.') < 0)) out[String(k).toLowerCase()] = out[String(k).toLowerCase()] == null ? o[k] : out[String(k).toLowerCase()]; cnt++; } else walk(o[k], d + 1, pk); }
+        })(j, 0, '');
+        if (ti === 1) nAll = cnt;
+        if (!cnt) msg = T('Yanıtta sayı yok: ', 'No numbers: ') + JSON.stringify(j).slice(0, 120);
       } catch (e) { msg = (e && e.message) || 'hata'; }
     }
-    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + Object.keys(out).length + T(' alan', ' fields') + ' (' + Object.keys(out).slice(0, 14).join(', ') + ')'); }
+    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); var ks = Object.keys(out), hit = ks.filter(function (k) { return /rifle|critical|defend|attack/.test(k); }).slice(0, 6); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + ks.length + T(' alan', ' fields') + (hit.length ? ' (' + hit.join(', ') + ')' : ' (' + ks.slice(0, 8).join(', ') + ')')); }
     else { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); mtTrvSt(T('İstatistik alınamadı: ', 'Stats failed: ') + msg); }
     mtTrvBusy = false; mtLast = ''; mtRefresh();
   }
@@ -4784,10 +4786,10 @@
     if (v[1] || v[0] > 0) return v;
     var t = gmGet('merit-trv', null); if (!t || !t.d) return v;
     var ds = v[2] || '', n = 0, c = null, m = /Travel to (.+?) ([\d,]+) times/i.exec(ds);
-    if (m) { var st = MT_STAT[m[1].trim()]; if (st && t.d[st] != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(t.d[st]); } }
+    if (m) { var st = MT_STAT[m[1].trim()], tv = st ? mtFind(t.d, new RegExp(st + '$')) : null; if (tv != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(tv); } }
     else {
       var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
-      for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) for (var k = 0; k < MT_RULES[i][1].length; k++) if (t.d[MT_RULES[i][1][k]] != null) { c = Number(t.d[MT_RULES[i][1][k]]); n = parseFloat(nm[1].replace(/,/g, '')); break; }
+      for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) { var fv = mtFind(t.d, MT_RULES[i][1]); if (fv != null) { c = Number(fv); n = parseFloat(nm[1].replace(/,/g, '')); } }
     }
     if (c == null || !(n > 0) || c >= n) return v;
     return [Math.round(c / n * 1000) / 10, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US'), v[2], v[3]];
@@ -4929,6 +4931,7 @@
     });
     mds.forEach(function (li) {
       var pp = li.querySelector('p[class*="progress___"]'), mm = pp && /([\d,\.]+)\s*\/\s*([\d,\.]+)/.exec(pp.textContent), ti = li.querySelector('[class*="title___"]'), ds = li.querySelector('[class*="description___"]');
+      if (!mm && ti && /locked/i.test(li.textContent) && !/\d{4}/.test(li.textContent)) { var nm1 = ti.textContent.trim(), e1 = [0, '', ds ? ds.textContent.replace(/\s+/g, ' ').trim() : '', 'm']; if (!(c.d[nm1] && c.d[nm1][0] > 0) && JSON.stringify(c.d[nm1]) !== JSON.stringify(e1)) { c.d[nm1] = e1; ch = true; } return; }
       if (!mm || !ti) return;
       var a = parseFloat(mm[1].replace(/,/g, '')), b = parseFloat(mm[2].replace(/,/g, '')), nm = ti.textContent.trim();
       var e = [b ? Math.round(a / b * 1000) / 10 : 0, mm[1] + ' / ' + mm[2], ds ? ds.textContent.replace(/\s+/g, ' ').trim() : '', 'm'];
@@ -5072,7 +5075,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.26';
+  var TH_VER = '1.6.27';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5106,7 +5109,8 @@
     ['1.6.23', 'o', ['Merit Tracker: ilerlemesi gösterilmeyen honorlar için (uçuş, finishing hit, defend, critical, rounds, refill, bounty, OC, stat kazanımı vb.) ilerleme API kişisel istatistiklerinden hesaplanıyor.'], ['Merit Tracker: for honors without shown progress (travel, finishing hits, defends, criticals, rounds, refills, bounties, OC, stat gains etc.) progress is computed from your API personal stats.']],
     ['1.6.24', 'o', ['Merit Tracker: istatistik çekme iki yolla deneniyor ve sonucu (başarı ya da hata nedeni) pencerede yazıyor.'], ['Merit Tracker: stats are fetched in two ways and the result (success or error reason) is shown in the panel.']],
     ['1.6.25', 'o', ['Merit Tracker: otomatik tarama artık Awards sayfasının arama kutusunu da kullanıyor (aramada tüm ödüllerin ilerlemesi görünüyor).'], ['Merit Tracker: the automatic scan now also uses the Awards page search box (search shows progress for all awards).']],
-    ['1.6.26', 'o', ['Merit Tracker: okunan istatistik alanlarının adları durum satırında yazıyor.'], ['Merit Tracker: the names of the stat fields read are shown in the status line.']]
+    ['1.6.26', 'o', ['Merit Tracker: okunan istatistik alanlarının adları durum satırında yazıyor.'], ['Merit Tracker: the names of the stat fields read are shown in the status line.']],
+    ['1.6.27', 'o', ['Merit Tracker: tüm istatistik yolları okunup ödül açıklamalarıyla esnek eşleştiriliyor; medalların "Locked" (ilerlemesiz) olanları da kaydediliyor.'], ['Merit Tracker: all stat paths are read and matched flexibly to award descriptions; locked medals without progress are also stored.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
