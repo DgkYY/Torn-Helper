@@ -5142,7 +5142,7 @@
     ocwBusy = false;
   }
   function ocsTick() {
-    var old = document.querySelectorAll('.th-ocs');
+    var old = document.querySelectorAll('.th-ocs, .th-ocw');
     if (!ui.ocs || !/factions\.php/i.test(location.pathname)) { for (var z = 0; z < old.length; z++) old[z].remove(); return; }
     ocwLoad();
     var wc = gmGet('oc-w', null), W = wc && wc.d ? wc.d : null;
@@ -5152,7 +5152,7 @@
       if (!g) continue;
       var ix = groups.indexOf(g); if (ix < 0) { groups.push(g); gh.push([]); ix = groups.length - 1; }
       var te = sc[i].parentNode.querySelectorAll('[class*="title___"]')[0], v = Number(String(sc[i].textContent).replace(/[^\d.]/g, ''));
-      if (isFinite(v) && String(sc[i].textContent).trim() !== '') gh[ix].push([te ? te.textContent.trim() : '?', v]);
+      if (isFinite(v) && String(sc[i].textContent).trim() !== '') gh[ix].push([te ? te.textContent.trim() : '?', v, te]);
     }
     for (var q = 0; q < groups.length; q++) {
       var arr = gh[q], el = groups[q].querySelectorAll('.th-ocs')[0];
@@ -5161,6 +5161,16 @@
       var card = groups[q].closest ? groups[q].closest('[data-oc-id]') : null, pt = card ? card.querySelectorAll('[class*="panelTitle"]')[0] : null, cw = W && pt ? W[ocN(pt.textContent)] : null;
       var wsum = 0, wtot = 0, miss = 0;
       if (cw) arr.forEach(function (a) { var rn = ocN(a[0]), w = cw[rn]; if (w == null) w = cw[rn.replace(/\d+$/, '')]; if (w == null) { miss++; return; } wsum += w * a[1]; wtot += w; });
+      arr.forEach(function (a) {
+        if (!a[2] || !a[2].isConnected) return;
+        var rn = ocN(a[0]), w = cw ? cw[rn] : null; if (w == null && cw) w = cw[rn.replace(/\d+$/, '')];
+        var wp = w != null && wtot > 0 && !miss ? Math.round(w / wtot * 100) : (w != null ? Math.round(w) : null), sp = a[2].parentNode.querySelectorAll('.th-ocw')[0];
+        if (wp == null) { if (sp) sp.remove(); return; }
+        if (!sp) { sp = document.createElement('span'); sp.className = 'th-ocw'; sp.style.cssText = 'margin-left:5px;font:700 10px Arial,sans-serif;color:#9ca3af;'; a[2].parentNode.insertBefore(sp, a[2].nextSibling); }
+        var tw = wp + (wtot > 0 && !miss ? '%' : '');
+        if (sp.textContent !== tw) sp.textContent = tw;
+        sp.title = T('Bu rolün ağırlıklı hesaptaki payı (tornprobability.com)', 'This role share in the weighted calculation (tornprobability.com)');
+      });
       var txt = (cw && !miss && wtot > 0 ? T('Ağırlıklı %', 'Weighted ') + (wsum / wtot).toFixed(1) + (T('', '%')) + ' · ' : '') + T('Ortalama %', 'Average ') + (sum / arr.length).toFixed(0) + (T('', '%')) + ' · ' + T('en düşük: ', 'lowest: ') + mn[0] + ' ' + mn[1] + '%';
       if (!el) { el = document.createElement('div'); el.className = 'th-ocs'; el.style.cssText = 'margin:4px 0;padding:3px 8px;border-radius:4px;background:#2a2a2a;font:700 11px Arial,sans-serif;'; groups[q].appendChild(el); }
       var main = cw && !miss && wtot > 0 ? wsum / wtot : mn[1];
@@ -5270,7 +5280,19 @@
     ['1.6.30', 'o', ['Borsa sayfası: hisseler günlük getiriye göre sıralanıyor (#1, #2…) ve üstte parana yetenlerin işaretlendiği ilk 5 listesi var. Ayar aynı: Mağaza, mülk ve takas.'], ['Stock market page: stocks are ranked by daily return (#1, #2…) with a top-5 list on top marking the ones you can afford. Same setting: Shops, property and trades.']],
     ['1.6.31', 'o', ['NPC Loot: kenar çubuğunda Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkışa kalan süre ve loot seviyesi (30/90/210/450 dk). Ayar: Profil ve saldırı bölümünde.'], ['NPC Loot: sidebar panel with time to hospital release and loot level (30/90/210/450 min) for Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge. Setting: Profile and attacks section.']],
     ['1.6.32', 'o', ['NPC Loot: çıkış zamanı bilinmiyorsa son aktivite zamanına göre tahmini seviye de gösteriliyor (doğrulanmadı, gerçek seviyeyle karşılaştır).'], ['NPC Loot: when the release time is unknown, an estimated level from the last action time is shown (unverified, compare with the real level).']],
-    ['1.6.33', 'o', ['Crimes kaydı: Hustling oyun satırlarında (Cornhole, Snail Racing, Find the Lady, Shell Game) $/nerve artık Gather Audience nerve payını da içeriyor.'], 'Disposal: kayıt artık seçilen yönteme göre ayrı tutuluyor (örn. General Waste · Bury), çünkü yöntemlerin nerve ve kazancı farklı.', 'NPC Loot: geçen süre artık gün olarak gösteriliyor (örn. 79g 17s); Merit istatistik durum satırı kısaltıldı.', 'Hisseler: eşya veren bonuslarda eşya adı ve piyasa değeri yazılıyor (örn. 1x Drug Pack ≈ $4.48M) Katalog değeri olmayan eşyalar Item Market ortalamasından fiyatlanıyor.', ['Crimes logging: Hustling game rows (Cornhole, Snail Racing, Find the Lady, Shell Game) now include a share of the Gather Audience nerve in $/nerve.'], 'Disposal: logging is now kept per chosen method (e.g. General Waste · Bury) because methods differ in nerve and payout.', 'NPC Loot: elapsed time now shows days (e.g. 79d 17h) and the Merit stats status line is shorter.', 'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M) Items without a catalogue value are priced from the Item Market average.']
+    ['1.6.33', 'o', [
+      'Crimes kaydı: Hustling oyun satırlarında (Cornhole, Snail Racing, Find the Lady, Shell Game) $/nerve artık Gather Audience nerve payını da içeriyor.',
+      'Disposal: kayıt artık seçilen yönteme göre ayrı tutuluyor (örn. General Waste · Bury), çünkü yöntemlerin nerve ve kazancı farklı.',
+      'NPC Loot: geçen süre artık gün olarak gösteriliyor (örn. 79g 17s); Merit istatistik durum satırı kısaltıldı.',
+      'Hisseler: eşya veren bonuslarda eşya adı ve piyasa değeri yazılıyor (örn. 1x Drug Pack ≈ $4.48M). Katalog değeri olmayan eşyalar Item Market ortalamasından fiyatlanıyor.',
+      'Faction OC: her rolün adının yanında ağırlıklı hesaptaki payı yazıyor.'
+    ], [
+      'Crimes logging: Hustling game rows (Cornhole, Snail Racing, Find the Lady, Shell Game) now include a share of the Gather Audience nerve in $/nerve.',
+      'Disposal: logging is now kept per chosen method (e.g. General Waste · Bury) because methods differ in nerve and payout.',
+      'NPC Loot: elapsed time now shows days (e.g. 79d 17h) and the Merit stats status line is shorter.',
+      'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M). Items without a catalogue value are priced from the Item Market average.',
+      'Faction OC: each role now shows its weight (share in the weighted success) next to its name.'
+    ]]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
