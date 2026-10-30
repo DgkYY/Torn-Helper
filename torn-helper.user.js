@@ -4140,24 +4140,34 @@
   }
   var gybBusy = false, GYB_SRC = { faction_perks: ['fraksiyon', 'faction'], education_perks: ['eğitim', 'education'], property_perks: ['mülk', 'property'], job_perks: ['iş', 'job'], book_perks: ['kitap', 'book'], stock_perks: ['hisse', 'stock'], merit_perks: ['merit', 'merit'], enhancer_perks: ['enhancer', 'enhancer'], faction: ['fraksiyon', 'faction'], education: ['eğitim', 'education'], property: ['mülk', 'property'] };
   async function gybLoad() {
-    var c = gmGet('gym-perks', null);
+    var c = gmGet('gym-perks2', null);
     if (gybBusy || !keyOk() || (c && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
     gybBusy = true;
     try {
-      var j = null, out = [];
+      var out = [], seen = {};
+      function walk(o, src, d) {
+        if (!o || d > 5) return;
+        if (typeof o === 'string') { if (!seen[o]) { seen[o] = 1; out.push([src, o]); } return; }
+        if (Array.isArray(o)) { o.forEach(function (x) { walk(x, src, d + 1); }); return; }
+        if (typeof o === 'object') Object.keys(o).forEach(function (k) {
+          var v = o[k];
+          if (typeof v === 'string' && !/^(ability|description|effect|perk|bonus|text)$/i.test(k)) return;
+          walk(v, GYB_SRC[k] ? k : src, d + 1);
+        });
+      }
+      var j = null;
       try { j = await prApi('user/perks'); } catch (e0) { j = null; }
-      if (!j || j.error) { var kk = keyOk(); j = await (await gmFetch('https://api.torn.com/user/?selections=perks&comment=torn-helper&key=' + encodeURIComponent(kk))).json(); }
-      (function walk(o, src, d) {
-        if (!o || d > 4) return;
-        if (Array.isArray(o)) { o.forEach(function (x) { if (typeof x === 'string') out.push([src, x]); else walk(x, src, d + 1); }); return; }
-        if (typeof o === 'object') Object.keys(o).forEach(function (k) { walk(o[k], GYB_SRC[k] ? k : src, d + 1); });
-      })(j, '', 0);
-      gmSet('gym-perks', { at: Date.now(), d: out.filter(function (x) { return /gym/i.test(x[1]); }), n: out.length });
-    } catch (e) { gmSet('gym-perks', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now(), err: String((e && e.message) || e) }); }
+      if (j && !j.error) walk(j, '', 0);
+      try { var kk = keyOk(); var j1 = await (await gmFetch('https://api.torn.com/user/?selections=perks&comment=torn-helper&key=' + encodeURIComponent(kk))).json(); if (j1 && !j1.error) walk(j1, '', 0); } catch (e1) {}
+      try { var ju = await prApi('faction/upgrades'); if (ju && !ju.error) walk(ju, 'faction_perks', 0); } catch (e2) {}
+      var gm = out.filter(function (x) { return /%/.test(x[1]) && /gym|steadfast|strength|defense|speed|dexterity/i.test(x[1]); });
+      gmSet('gym-perks2', { at: Date.now(), d: gm, n: out.length, all: out.map(function (x) { return x[0] + ': ' + x[1]; }).slice(0, 80) });
+      try { console.log('[torn-helper] gym perks', gm, out.length); } catch (e3) {}
+    } catch (e) { gmSet('gym-perks2', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now(), err: String((e && e.message) || e) }); }
     gybBusy = false;
   }
   function gybFor(stat) {
-    var c = gmGet('gym-perks', null); if (!c || !c.d || !c.d.length) return null;
+    var c = gmGet('gym-perks2', null); if (!c || !c.d || !c.d.length) return null;
     var tot = 0, by = {};
     c.d.forEach(function (x) {
       var m = /(\d+(?:\.\d+)?)\s*%/.exec(x[1]); if (!m) return;
@@ -5351,7 +5361,7 @@
     ['1.6.40', 'o', ['Scamming: Farm Email Addresses artık çiftlenen e-posta sayısını nerve başına kaydediyor (örn. ort. 13.3 email/nerve).'], ['Scamming: Farm Email Addresses now logs the number of emails farmed per nerve (e.g. avg 13.3 email/nerve).']],
     ['1.6.41', 'o', ['Scamming: hedef satırları artık yönteme göre (Delivery scam vb.) ve adıma göre (Respond, Capitalize) ayrı kaydediliyor; satırda yöntemin toplamı görünüyor.'], ['Scamming: target rows are now logged per method (Delivery scam and so on) and per step (Respond, Capitalize); each row shows the method total.']],
     ['1.6.42', 'o', ['Card Skimming: Recover sonucundaki kart sayısı artık kaydediliyor ve satırda nerve başına kart olarak görünüyor.'], ['Card Skimming: the number of card details in a Recover result is now logged and shown per nerve on the row.']],
-    ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks).'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']]
+    ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks). Fraksiyon bonusları için ek kaynaklar eklendi.'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
