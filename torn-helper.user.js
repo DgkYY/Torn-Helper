@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.50
+// @version      1.6.51
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2967,7 +2967,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.50', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.51', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5051,6 +5051,11 @@
   function msmObj(t) {
     var tr = lang0() !== 'en', m;
     t = String(t || '').replace(/\s+/g, ' ').trim(); if (!t || !tr) return t;
+    t = t.replace(/\.$/, '');
+    if ((m = /^Successfully mug (.+)$/i.exec(t))) return 'Mug başarıyla yap: ' + m[1];
+    if ((m = /^Successfully (?:defeat|beat) (.+)$/i.exec(t))) return 'Başarıyla yen: ' + m[1];
+    if (/^Give them all of their money back$/i.test(t)) return 'Aldığın tüm parayı ona geri ver';
+    if ((m = /^Give (?:the |an? )?(.+?) (?:back )?to (.+)$/i.exec(t))) return 'Ver: ' + m[1] + ' → ' + m[2];
     if ((m = /^Defeat (.+?) without using any guns$/i.exec(t))) return 'Yen: ' + m[1] + ' — silah kullanmadan';
     if ((m = /^Within an? (\d+) minute window, defeat (.+)$/i.exec(t))) return m[1] + ' dakika içinde yen: ' + m[2].replace(/,? and /, ' ve ');
     if ((m = /^Hospitali[sz]e (.+?) (\d+) times?(?: \((.*)\))?$/i.exec(t))) return 'Hastaneye yolla: ' + m[1] + ' — ' + m[2] + ' kez' + (m[3] ? ' (' + m[3] + ')' : '');
@@ -5486,7 +5491,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.50';
+  var TH_VER = '1.6.51';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5558,7 +5563,8 @@
     ['1.6.47', 'o', ['Ana sayfa: Battle Stats kutusunun altında yeni pencere, modifier dahil (ilaç vb. etkili) güncel statlar ve toplam. Ayarlardan kapatılabilir.'], ['Home page: a new panel under the Battle Stats box shows current stats with modifiers (drugs and so on) and the total. Can be turned off in settings.']],
     ['1.6.48', 'o', ['Efektif Battle Stats penceresi: modifier değerleri artık API (user/battlestats) üzerinden de okunuyor, başlık/satır bulma daha esnek.'], ['Effective Battle Stats panel: modifiers are now also read from the API (user/battlestats), and heading/row detection is more flexible.']],
     ['1.6.49', 'o', ['Duke görevleri: her görevin üstünde "Görev özeti" kutusu (ne istendiği, Türkçe/İngilizce). Henüz kabul edilmemiş bilinen görevler için hikâyeden özetlendi. Ayarlardan kapatılabilir.'], ['Duke missions: a "Quest summary" box on top of each mission (what is asked, in Turkish/English). Known not-yet-accepted missions are summarised from the story. Can be turned off in settings.']],
-    ['1.6.50', 'o', ['Duke görev özeti: "Use X while in jail/hospital" gibi daha fazla hedef cümlesi Türkçeye çevriliyor; çeviri kontrolü yapıldı.'], ['Duke quest summary: more objective phrases (such as "Use X while in jail/hospital") are translated to Turkish; translation audit done.']]
+    ['1.6.50', 'o', ['Duke görev özeti: "Use X while in jail/hospital" gibi daha fazla hedef cümlesi Türkçeye çevriliyor; çeviri kontrolü yapıldı.'], ['Duke quest summary: more objective phrases (such as "Use X while in jail/hospital") are translated to Turkish; translation audit done.']],
+    ['1.6.51', 'o', ['Duke görev özeti: "Successfully mug X" ve "Give them all of their money back" gibi hedef cümleleri Türkçeye çevriliyor.'], ['Duke quest summary: objective phrases like "Successfully mug X" and "Give them all of their money back" are now translated to Turkish.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
