@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.31
+// @version      1.6.32
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.31', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.32', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4997,11 +4997,11 @@
     var rel = gmGet('npc-rel', {}) || {}, res = {}, err = '';
     for (var i = 0; i < NPCS.length; i++) {
       try {
-        var j = await prApi('user/' + NPCS[i][1] + '/basic'), p = (j && j.profile) || j || {}, st = p.status || {};
+        var j = await prApi('user/' + NPCS[i][1] + '/profile'), p = (j && j.profile) || j || {}, st = p.status || {}, la = p.last_action || {};
         if (j && j.error) { err = j.error.error || 'API'; break; }
         var until = Number(st.until) || 0, state = String(st.state || '');
         if (/hospital/i.test(state) && until > 0) { rel[NPCS[i][1]] = until * 1000; res[NPCS[i][1]] = { h: until * 1000 }; }
-        else res[NPCS[i][1]] = { h: 0, st: state };
+        else res[NPCS[i][1]] = { h: 0, st: state, la: Number(la.timestamp) * 1000 || 0 };
       } catch (e) { err = (e && e.message) || '?'; break; }
     }
     gmSet('npc-rel', rel); gmSet('npc-d', { at: Date.now(), d: res, e: err });
@@ -5018,6 +5018,9 @@
         var el = (now - r) / 60000, lv = 1; for (var k = 0; k < NPC_T.length; k++) if (el >= NPC_T[k]) lv = k + 2;
         var nx = lv <= 4 ? npcDur((NPC_T[lv - 1] - el) * 60000) : '';
         line = '<b style="color:' + (lv >= 4 ? '#86efac' : '#e5e7eb') + ';">' + T('Seviye ', 'Level ') + lv + '</b>' + (nx ? ' · ' + T('sonraki seviye ', 'next level in ') + nx : ' · ' + T('en yüksek', 'max'));
+      } else if (d.la) {
+        var el2 = (now - d.la) / 60000, lv2 = 1; for (var k2 = 0; k2 < NPC_T.length; k2++) if (el2 >= NPC_T[k2]) lv2 = k2 + 2;
+        line = '<span style="color:#9ca3af;">' + T('Tahmini (son aktiviteye göre, doğrulanmadı): ', 'Estimate (from last action, unverified): ') + '</span><b>' + T('Seviye ', 'Level ') + lv2 + '</b> <span style="color:#9ca3af;">· ' + T('son aktivite ', 'last action ') + npcDur(now - d.la) + T(' önce', ' ago') + '</span>';
       } else line = '<span style="color:#9ca3af;">' + T('Çıkış zamanı bilinmiyor (hastanedeyken henüz görülmedi)', 'Release time unknown (not seen in hospital yet)') + '</span>';
       h += '<div style="padding:2px 0;border-top:1px solid #374151;"><b>' + n[0] + '</b> ' + line + '</div>';
     });
@@ -5218,7 +5221,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.31';
+  var TH_VER = '1.6.32';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5257,7 +5260,8 @@
     ['1.6.28', 'o', ['Borsa sayfası: her hissenin altına blok maliyeti, ödeme sıklığı ve günlük getiri (yalnızca veri, öneri değil). Ayar: Mağaza, mülk ve takas bölümünde.'], ['Stock market page: block cost, payout frequency and daily return under every stock (data only, no advice). Setting: Shops, property and trades section.']],
     ['1.6.29', 'o', ['Hapishane: BUST onay kutusu (Yes) otomatik onaylanabiliyor. Dikkat: 5 nerve harcar. Ayar: Suçlar, OC ve hapishane bölümünde.'], ['Jail: the BUST confirmation (Yes) can be confirmed automatically. Careful: it spends 5 nerve. Setting: Crimes, OC and jail section.']],
     ['1.6.30', 'o', ['Borsa sayfası: hisseler günlük getiriye göre sıralanıyor (#1, #2…) ve üstte parana yetenlerin işaretlendiği ilk 5 listesi var. Ayar aynı: Mağaza, mülk ve takas.'], ['Stock market page: stocks are ranked by daily return (#1, #2…) with a top-5 list on top marking the ones you can afford. Same setting: Shops, property and trades.']],
-    ['1.6.31', 'o', ['NPC Loot: kenar çubuğunda Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkışa kalan süre ve loot seviyesi (30/90/210/450 dk). Ayar: Profil ve saldırı bölümünde.'], ['NPC Loot: sidebar panel with time to hospital release and loot level (30/90/210/450 min) for Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge. Setting: Profile and attacks section.']]
+    ['1.6.31', 'o', ['NPC Loot: kenar çubuğunda Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkışa kalan süre ve loot seviyesi (30/90/210/450 dk). Ayar: Profil ve saldırı bölümünde.'], ['NPC Loot: sidebar panel with time to hospital release and loot level (30/90/210/450 min) for Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge. Setting: Profile and attacks section.']],
+    ['1.6.32', 'o', ['NPC Loot: çıkış zamanı bilinmiyorsa son aktivite zamanına göre tahmini seviye de gösteriliyor (doğrulanmadı, gerçek seviyeyle karşılaştır).'], ['NPC Loot: when the release time is unknown, an estimated level from the last action time is shown (unverified, compare with the real level).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
