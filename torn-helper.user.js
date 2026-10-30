@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.35
+// @version      1.6.36
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2715,7 +2715,7 @@
   var TIME_RULES = [
     [/Bitişe (?=\d)/g, 'Ends in '], [/Hedef skor (?=\d)/g, 'Target score '], [/\bFark (?=[+-]?\d)/g, 'Lead '], [/\bChain (?=\d)/g, 'Chain '], [/(\d+) kayıt indirildi\. API anahtarların dosyaya yazılmaz\./g, '$1 records downloaded. Your API keys are not written to the file.'], [/(\d+) kayıt yüklendi\. Sayfa yenileniyor…/g, '$1 records restored. Reloading the page…'],
     [/(\d+) ürün · maliyet /g, '$1 items · cost '], [/tahmini kâr (?=[$-])/g, 'est. profit '], [/\((\d+) ürünün piyasa fiyatı bilinmiyor\)/g, '($1 items have no market price)'],
-    [/\b1 hedef(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '1 target'], [/(\d+) hedef(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 targets'], [/\b1 rakip(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '1 enemy'], [/(\d+) rakip(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 enemies'], [/\bEn iyi (?=\$)/g, 'Best '],
+    [/\b1 hedef(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '1 target'], [/(\d+) hedef(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 targets'], [/\b1 rakip(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '1 enemy'], [/(\d+) rakip(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 enemies'], [/\bEn iyi (?=\$)/g, 'Best '], [/ \/ saat(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, ' / hour'],
     [/(\d+) dk önce/g, '$1 min ago'], [/(\d+) sa önce/g, '$1 h ago'], [/(\d+) gün önce/g, '$1 d ago'], [/\baz önce\b/g, 'just now'], [/\baz kaldı\b/g, 'soon'],
     [/(\d+) sa (\d+) dk/g, '$1 h $2 min'], [/(\d+) gün (\d+) sa/g, '$1 d $2 h'],
     [/(\d+) dk(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 min'], [/(\d+) sa(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 h'], [/(\d+) gün(?![A-Za-zçğıöşüÇĞİÖŞÜ])/g, '$1 d'],
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.35', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.36', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5239,7 +5239,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.35';
+  var TH_VER = '1.6.36';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5296,7 +5296,8 @@
       'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M). Items without a catalogue value are priced from the Item Market average.',
       'Faction OC: each role now shows its weight (share in the weighted success) next to its name.'
     ]],
-    ['1.6.35', 'n', ['Kenar çubuğundaki Notlar ve Bağlantılar başlıkları dil değişince artık yenileniyor (İngilizce seçince Türkçe kalıyordu).'], ['The sidebar Notes and Links headings now update when you switch language (they stayed Turkish before).']]
+    ['1.6.35', 'n', ['Kenar çubuğundaki Notlar ve Bağlantılar başlıkları dil değişince artık yenileniyor (İngilizce seçince Türkçe kalıyordu).'], ['The sidebar Notes and Links headings now update when you switch language (they stayed Turkish before).']],
+    ['1.6.36', 'n', ['İngilizce arayüzde Yurtdışı fiyatları kartındaki "/ SAAT" artık "/ HOUR" yazıyor.'], ['In the English interface the Abroad prices card now says "/ HOUR" instead of "/ SAAT".']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
