@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.52
+// @version      1.6.53
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2967,7 +2967,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.52', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.53', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5611,7 +5611,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.52';
+  var TH_VER = '1.6.53';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5685,7 +5685,8 @@
     ['1.6.49', 'o', ['Duke görevleri: her görevin üstünde "Görev özeti" kutusu (ne istendiği, Türkçe/İngilizce). Henüz kabul edilmemiş bilinen görevler için hikâyeden özetlendi. Ayarlardan kapatılabilir.'], ['Duke missions: a "Quest summary" box on top of each mission (what is asked, in Turkish/English). Known not-yet-accepted missions are summarised from the story. Can be turned off in settings.']],
     ['1.6.50', 'o', ['Duke görev özeti: "Use X while in jail/hospital" gibi daha fazla hedef cümlesi Türkçeye çevriliyor; çeviri kontrolü yapıldı.'], ['Duke quest summary: more objective phrases (such as "Use X while in jail/hospital") are translated to Turkish; translation audit done.']],
     ['1.6.51', 'o', ['Duke görev özeti: "Successfully mug X" ve "Give them all of their money back" gibi hedef cümleleri Türkçeye çevriliyor.'], ['Duke quest summary: objective phrases like "Successfully mug X" and "Give them all of their money back" are now translated to Turkish.']],
-    ['1.6.52', 'o', ['Gym: her statın altında tahmini kazanç (antrenman başına, şu anki ve dolu enerjiyle); gym çarpanları API ve gym bilgi kutusundan, sen boştayken arka planda otomatik okunuyor ve kaydediliyor. Ayarlardan kapatılabilir. İletişim bilgileri eklendi.'], ['Gym: estimated gain under each stat (per train, with current and full energy); gym multipliers are read automatically from the API and the gym info boxes while you are idle, then stored. Can be turned off in settings. Contact info added.']]
+    ['1.6.52', 'o', ['Gym: her statın altında tahmini kazanç (antrenman başına, şu anki ve dolu enerjiyle); gym çarpanları API ve gym bilgi kutusundan, sen boştayken arka planda otomatik okunuyor ve kaydediliyor. Ayarlardan kapatılabilir. İletişim bilgileri eklendi.'], ['Gym: estimated gain under each stat (per train, with current and full energy); gym multipliers are read automatically from the API and the gym info boxes while you are idle, then stored. Can be turned off in settings. Contact info added.']],
+    ['1.6.53', 'o', ['Gym tahmini: sahip olmadığın gymlerin bilgi kutusu da arka planda okunabiliyor (Cancel düğmesi ile kapatılıyor, üyelik etkinleştirilmez).'], ['Gym estimate: info boxes of gyms you do not own can now be read in the background too (closed with Cancel, membership is never activated).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
