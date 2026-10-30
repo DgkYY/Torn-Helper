@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.32
+// @version      1.6.33
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.32', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.33', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4778,7 +4778,7 @@
         if (!cnt) msg = T('Yanıtta sayı yok: ', 'No numbers: ') + JSON.stringify(j).slice(0, 120);
       } catch (e) { msg = (e && e.message) || 'hata'; }
     }
-    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); var ks = Object.keys(out), hit = ks.filter(function (k) { return /rifle|critical|defend|attack/.test(k); }).slice(0, 6); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + ks.length + T(' alan', ' fields') + (hit.length ? ' (' + hit.join(', ') + ')' : ' (' + ks.slice(0, 8).join(', ') + ')')); }
+    if (Object.keys(out).length) { gmSet('merit-trv', { at: Date.now(), d: out }); var ks = Object.keys(out), hit = ks.filter(function (k) { return /rifle|critical|defend|attack/.test(k); }).slice(0, 6); mtTrvSt(T('İstatistik okundu: ', 'Stats read: ') + ks.length + T(' alan', ' fields')); }
     else { gmSet('merit-trv', { at: 0, fail: Date.now(), d: {} }); mtTrvSt(T('İstatistik alınamadı: ', 'Stats failed: ') + msg); }
     mtTrvBusy = false; mtLast = ''; mtRefresh();
   }
@@ -4989,7 +4989,7 @@
 
   /* NPC loot seviyesi: hastaneden çıkıştan itibaren 30 / 90 / 210 / 450 dk (Torn wiki, patch #101) */
   var NPCS = [['Duke', 4], ['Leslie', 15], ['Jimmy', 19], ['Fernando', 20], ['Tiny', 21], ['Scrooge', 10]], NPC_T = [30, 90, 210, 450], npcBusy = false;
-  function npcDur(ms) { var m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + 's ' + (m % 60) + 'dk' : m + 'dk'; }
+  function npcDur(ms) { var m = Math.max(0, Math.round(ms / 60000)), u = T(['g', 's', 'dk'], ['d', 'h', 'm']); return m >= 1440 ? Math.floor(m / 1440) + u[0] + ' ' + Math.floor(m % 1440 / 60) + u[1] : m >= 60 ? Math.floor(m / 60) + u[1] + ' ' + (m % 60) + u[2] : m + u[2]; }
   async function npcLoad(force) {
     var c = gmGet('npc-d', null);
     if (npcBusy || (!force && c && Date.now() - c.at < 90000) || !keyOk()) return;
@@ -5077,8 +5077,16 @@
     var it = /^(\d+)x (.+)$/i.exec(desc.trim()); if (!it) return null;
     try {
       var key = keyOk(); if (!key) return null;
-      var ids = await mfIds(key), id = ids[it[2].trim().toLowerCase()], mv = gmGet('item-mv', null);
+      var ids = await mfIds(key), nm0 = it[2].trim().toLowerCase(), id = ids[nm0], mv = gmGet('item-mv', null);
+      if (!id) { var nn = nm0.replace(/[^a-z0-9]/g, ''); Object.keys(ids).some(function (k) { if (k.replace(/[^a-z0-9]/g, '') === nn) { id = ids[k]; return true; } return false; }); }
       if (id && mv && mv[id]) return Number(it[1]) * Number(mv[id]);
+      if (id) {
+        var sc = gmGet('stk-mv', {}) || {}, ce = sc[id];
+        if (ce && Date.now() - ce.at < 86400000) return ce.v ? Number(it[1]) * ce.v : null;
+        var q = await mfQuote(key, id), v = Number(q.avg) || (q.l && q.l[0] ? q.l[0].p : 0) || 0;
+        sc = gmGet('stk-mv', {}) || {}; sc[id] = { at: Date.now(), v: v }; gmSet('stk-mv', sc);
+        return v ? Number(it[1]) * v : null;
+      }
     } catch (e) {}
     return null;
   }
@@ -5101,7 +5109,7 @@
       if (!d[id]) { el.textContent = T('Blok bilgisi yok', 'No block data') + (c && c.m ? ' (' + c.m + ')' : ''); continue; }
       var price = pm ? parseFloat(pm[1].replace(/,/g, '')) : 0, cost = price * d[id].r, val = dm ? await stkValue(dm[1]) : null;
       var txt = T('Blok: ', 'Block: ') + d[id].r.toLocaleString('en-US') + T(' pay = ', ' shares = ') + stkFmt(cost) + ' · ' + T('her ', 'every ') + d[id].f + T(' günde ', ' days ');
-      txt += val != null && cost > 0 ? stkFmt(val) + ' → ' + T('günlük ', 'daily ') + stkFmt(val / d[id].f) + ' (' + (val / d[id].f / cost * 100).toFixed(3) + '%)' : T('(değer hesaplanamadı)', '(value unknown)');
+      txt += val != null && cost > 0 ? (dm && /^\d+x /i.test(dm[1].trim()) ? dm[1].trim() + ' ≈ ' : '') + stkFmt(val) + ' → ' + T('günlük ', 'daily ') + stkFmt(val / d[id].f) + ' (' + (val / d[id].f / cost * 100).toFixed(3) + '%)' : T('(değer hesaplanamadı)', '(value unknown)');
       el.textContent = txt;
       if (val != null && cost > 0) { el.setAttribute('data-r', String(val / d[id].f / cost)); el.setAttribute('data-c', String(cost)); el.setAttribute('data-n', (ul.querySelector('[class*="nameContainer"]') || {}).textContent || id); el.setAttribute('data-t', txt); }
       else { el.removeAttribute('data-r'); }
@@ -5221,7 +5229,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.32';
+  var TH_VER = '1.6.33';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5261,7 +5269,8 @@
     ['1.6.29', 'o', ['Hapishane: BUST onay kutusu (Yes) otomatik onaylanabiliyor. Dikkat: 5 nerve harcar. Ayar: Suçlar, OC ve hapishane bölümünde.'], ['Jail: the BUST confirmation (Yes) can be confirmed automatically. Careful: it spends 5 nerve. Setting: Crimes, OC and jail section.']],
     ['1.6.30', 'o', ['Borsa sayfası: hisseler günlük getiriye göre sıralanıyor (#1, #2…) ve üstte parana yetenlerin işaretlendiği ilk 5 listesi var. Ayar aynı: Mağaza, mülk ve takas.'], ['Stock market page: stocks are ranked by daily return (#1, #2…) with a top-5 list on top marking the ones you can afford. Same setting: Shops, property and trades.']],
     ['1.6.31', 'o', ['NPC Loot: kenar çubuğunda Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkışa kalan süre ve loot seviyesi (30/90/210/450 dk). Ayar: Profil ve saldırı bölümünde.'], ['NPC Loot: sidebar panel with time to hospital release and loot level (30/90/210/450 min) for Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge. Setting: Profile and attacks section.']],
-    ['1.6.32', 'o', ['NPC Loot: çıkış zamanı bilinmiyorsa son aktivite zamanına göre tahmini seviye de gösteriliyor (doğrulanmadı, gerçek seviyeyle karşılaştır).'], ['NPC Loot: when the release time is unknown, an estimated level from the last action time is shown (unverified, compare with the real level).']]
+    ['1.6.32', 'o', ['NPC Loot: çıkış zamanı bilinmiyorsa son aktivite zamanına göre tahmini seviye de gösteriliyor (doğrulanmadı, gerçek seviyeyle karşılaştır).'], ['NPC Loot: when the release time is unknown, an estimated level from the last action time is shown (unverified, compare with the real level).']],
+    ['1.6.33', 'o', ['Crimes kaydı: Hustling oyun satırlarında (Cornhole, Snail Racing, Find the Lady, Shell Game) $/nerve artık Gather Audience nerve payını da içeriyor.'], 'Disposal: kayıt artık seçilen yönteme göre ayrı tutuluyor (örn. General Waste · Bury), çünkü yöntemlerin nerve ve kazancı farklı.', 'NPC Loot: geçen süre artık gün olarak gösteriliyor (örn. 79g 17s); Merit istatistik durum satırı kısaltıldı.', 'Hisseler: eşya veren bonuslarda eşya adı ve piyasa değeri yazılıyor (örn. 1x Drug Pack ≈ $4.48M) Katalog değeri olmayan eşyalar Item Market ortalamasından fiyatlanıyor.', ['Crimes logging: Hustling game rows (Cornhole, Snail Racing, Find the Lady, Shell Game) now include a share of the Gather Audience nerve in $/nerve.'], 'Disposal: logging is now kept per chosen method (e.g. General Waste · Bury) because methods differ in nerve and payout.', 'NPC Loot: elapsed time now shows days (e.g. 79d 17h) and the Merit stats status line is shorter.', 'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M) Items without a catalogue value are priced from the Item Market average.']
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
@@ -5383,6 +5392,11 @@
     return '';
   }
   function crmRow(w) { var r = w; for (var i = 0; i < 4 && r; i++) { if (r.querySelectorAll && r.querySelectorAll('.crime-option')[0]) return r; r = r.parentNode; } return null; }
+  function crmMeth(row, crime) {
+    if (!/disposal/i.test(crime) || !row) return '';
+    var b = row.querySelector('.commit-button [class*="title___"]'), t = b ? b.textContent.trim() : '', n = row.querySelector('.commit-button [class*="nerve___"]');
+    return t && !/^dispose$/i.test(t) && n && /\d/.test(n.textContent) ? ' · ' + t : '';
+  }
   async function crmTick() {
     var old = document.querySelectorAll('.th-crm, .th-crms');
     if (!ui.crm || !/crimes\.php|sid=crimes/i.test(location.pathname + location.search)) { for (var z = 0; z < old.length; z++) old[z].remove(); crmSeen = false; return; }
@@ -5399,7 +5413,7 @@
       var row = crmRow(o.parentNode), opt = '', nv = 0;
       if (row) {
         var nm = row.querySelectorAll('[class*="crimeOptionSection"][class*="flexGrow"]')[0];
-        if (nm) opt = crmName(nm);
+        if (nm) opt = crmName(nm) + crmMeth(row, crime);
         var ne = row.querySelectorAll('[class*="nerve___"]')[0];
         nv = ne ? Number(String(ne.textContent).replace(/[^\d]/g, '')) : 0;
       }
@@ -5440,13 +5454,18 @@
     for (var j = 0; j < rows.length; j++) {
       var nm2 = rows[j].querySelectorAll('[class*="crimeOptionSection"][class*="flexGrow"]')[0];
       if (!nm2) continue;
-      var nmt = crmName(nm2);
+      var nmt = crmName(nm2) + crmMeth(rows[j], crime);
       var dd = data[crime + '|' + nmt], ln = nm2.querySelectorAll('.th-crm')[0];
       if (!ln) { ln = document.createElement('span'); ln.className = 'th-crm'; ln.style.cssText = 'display:block;font:700 10px/11px Arial,sans-serif;color:#9ca3af;white-space:nowrap;'; nm2.appendChild(ln); }
       var txt = T('veri yok', 'no data');
       if (dd && dd.n) {
-        var pn = dd.nv ? dd.m / dd.nv : 0;
-        txt = (dd.nv && (dd.m || dd.dv) ? T('ort. ', 'avg ') + (dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + '/nerve · ' : '') + dd.n + T(' deneme · %', ' tries · ') + Math.round(dd.ok / dd.n * 100) + T(' başarı', '% success') + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
+        var pn = dd.nv ? dd.m / dd.nv : 0, nvA = dd.nv, gsh = false;
+        if (/hustling/i.test(crime) && /^(cornhole|snail racing|find the lady|shell game)$/i.test(nmt)) {
+          var gn = 0, gnv = (data[crime + '|Audience'] || {}).nv || 0;
+          ['Cornhole', 'Snail Racing', 'Find the Lady', 'Shell Game'].forEach(function (g) { gn += (data[crime + '|' + g] || {}).n || 0; });
+          if (gn && gnv && dd.nv) { nvA = dd.nv + gnv * dd.n / gn; pn = dd.m / nvA; gsh = true; }
+        }
+        txt = (dd.nv && (dd.m || dd.dv) ? T('ort. ', 'avg ') + (dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + (gsh ? T('/nerve (Gather payı dahil) · ', '/nerve (incl. Gather share) · ') : '/nerve · ') : '') + dd.n + T(' deneme · %', ' tries · ') + Math.round(dd.ok / dd.n * 100) + T(' başarı', '% success') + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
         dd._pn = pn;
         if (dd.n >= 10 && !(dd.dv && !dd.m) && dd.m && pn > bestV) { bestV = pn; best = ln; }
       }
