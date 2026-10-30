@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.47
+// @version      1.6.48
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2966,7 +2966,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.47', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.48', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4987,29 +4987,49 @@
   }
   setInterval(mtAutoTick, 1200);
   /* Ana sayfa: Battle Stats kutusunun altında modifier'lı (efektif) statlar */
-  var bseSig = '';
+  var bseSig = '', bseApiD = null, bseApiAt = 0, bseBusy = false, bseLog = false;
+  async function bseLoad() {
+    if (bseBusy || !keyOk() || Date.now() - bseApiAt < 60000) return;
+    bseBusy = true; bseApiAt = Date.now();
+    try {
+      var j = await prApi('user/battlestats'), b = (j && j.battlestats) || j || {}, out = {};
+      ['strength', 'defense', 'speed', 'dexterity'].forEach(function (k) {
+        var o = b[k]; if (!o || typeof o !== 'object') return;
+        var v = Number(o.value), md = Number(o.modifier), mo = Number(o.modified);
+        if (!isFinite(v)) return;
+        var pc = isFinite(md) ? (Math.abs(md) <= 3 && !(mo && Math.abs(mo / v - 1 - md) > 0.01 && Math.abs(mo / v - 1 - md / 100) < 0.01) ? md * 100 : md) : null;
+        if (isFinite(mo) && v) pc = Math.round((mo / v - 1) * 1000) / 10;
+        out[k.charAt(0).toUpperCase() + k.slice(1)] = [v, pc == null ? 0 : pc, isFinite(mo) ? mo : null];
+      });
+      if (Object.keys(out).length === 4) bseApiD = out; else if (!bseLog) { bseLog = true; try { console.log('[torn-helper] bse api', JSON.stringify(j).slice(0, 300)); } catch (e) {} }
+    } catch (e) { if (!bseLog) { bseLog = true; try { console.log('[torn-helper] bse api error', e && e.message); } catch (e2) {} } }
+    bseBusy = false;
+  }
   function bseTick() {
     var old = document.getElementById('th-bse');
     if (!ui.bse || !/^\/(index\.php)?$/.test(location.pathname)) { if (old) old.remove(); bseSig = ''; return; }
-    var heads = document.querySelectorAll('h1,h2,h3,h4,div,span'), hd = null, i;
-    for (i = 0; i < heads.length; i++) { if (heads[i].children.length === 0 && /^\s*Battle Stats\s*$/i.test(heads[i].textContent || '')) { hd = heads[i]; break; } }
-    if (!hd) { if (old) old.remove(); bseSig = ''; return; }
+    bseLoad();
+    var heads = document.querySelectorAll('h1,h2,h3,h4,h5,div,span,p,a'), hd = null, i;
+    for (i = 0; i < heads.length; i++) { if (/^\s*Battle Stats\s*$/i.test(heads[i].textContent || '') && !heads[i].querySelector('div')) hd = heads[i]; }
+    if (!hd) { if (old) old.remove(); bseSig = ''; if (!bseLog) { bseLog = true; try { console.log('[torn-helper] bse: Battle Stats baslik bulunamadi'); } catch (e) {} } return; }
     var box = hd, n = 0;
-    while (box && n < 8) {
+    while (box && n < 10) {
       var tx = box.innerText || '';
-      if (/Strength/.test(tx) && /Dexterity/.test(tx) && /Total/.test(tx)) break;
+      if (/Strength/.test(tx) && /Dexterity/.test(tx)) break;
       box = box.parentElement; n++;
     }
-    if (!box || n >= 8 || /Working Stats|General Information/.test(box.innerText || '')) { if (old) old.remove(); return; }
-    var rows = box.querySelectorAll('li, tr, [class*="row"]'), got = {}, order = ['Strength', 'Defense', 'Speed', 'Dexterity'];
+    if (!box || n >= 10 || /Working Stats|General Information/.test(box.innerText || '')) { if (old) old.remove(); return; }
+    var rows = box.querySelectorAll('*'), got = {}, order = ['Strength', 'Defense', 'Speed', 'Dexterity'];
     for (i = 0; i < rows.length; i++) {
+      if (rows[i].children.length > 8) continue;
       var t = (rows[i].innerText || '').replace(/\s+/g, ' ').trim(), m = /^(Strength|Defense|Speed|Dexterity)\s*([\d,]+)\s*(?:([+\-\u2212])\s*(\d+(?:\.\d+)?)\s*%)?/.exec(t);
       if (!m || got[m[1]]) continue;
       var base = Number(m[2].replace(/,/g, '')), pc = m[4] ? Number(m[4]) * (m[3] === '+' ? 1 : -1) : 0;
-      if (isFinite(base)) got[m[1]] = [base, pc];
+      if (isFinite(base)) got[m[1]] = [base, pc, null];
     }
-    if (Object.keys(got).length < 4) return;
-    var sig = order.map(function (k) { return got[k].join(':'); }).join('|') + (lang0() || '');
+    var useApi = !!bseApiD, src = useApi ? bseApiD : got;
+    if (Object.keys(src).length < 4) return;
+    var sig = order.map(function (k) { return src[k].join(':'); }).join('|') + (lang0() || '') + (useApi ? 'a' : 'd');
     if (old && sig === bseSig && old.previousElementSibling === box) return;
     bseSig = sig;
     if (old) old.remove();
@@ -5017,7 +5037,7 @@
     pn.style.cssText = 'box-sizing:border-box;margin-top:10px;background:#2c2c2c;border:1px solid #3a3a3a;border-radius:5px;font:13px Arial,sans-serif;color:#ddd;overflow:hidden;';
     var tot = 0, tb = 0, h = '<div style="padding:7px 10px;font-weight:700;background:#1f1f1f;color:#fff;">' + T('Efektif Battle Stats (modifier dahil)', 'Effective Battle Stats (with modifiers)') + '</div>';
     order.forEach(function (k) {
-      var b = got[k][0], pc2 = got[k][1], ef = Math.round(b * (1 + pc2 / 100)); tot += ef; tb += b;
+      var b = src[k][0], pc2 = src[k][1], ef = src[k][2] != null ? Math.round(src[k][2]) : Math.round(b * (1 + pc2 / 100)); tot += ef; tb += b;
       h += '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 10px;border-top:1px solid #3a3a3a;"><span style="font-weight:700;">' + k + '</span><span><b style="color:' + (pc2 > 0 ? '#9be36b' : (pc2 < 0 ? '#f87171' : '#ddd')) + ';">' + ef.toLocaleString('en-US') + '</b> <span style="color:#9ca3af;font-size:11px;">(' + (pc2 > 0 ? '+' : '') + pc2 + '%)</span></span></div>';
     });
     h += '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 10px;border-top:1px solid #3a3a3a;font-weight:700;"><span>Total</span><span>' + tot.toLocaleString('en-US') + ' <span style="color:' + (tot >= tb ? '#9be36b' : '#f87171') + ';font-size:11px;">(' + (tot >= tb ? '+' : '') + (tot - tb).toLocaleString('en-US') + ')</span></span></div>';
@@ -5404,7 +5424,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.47';
+  var TH_VER = '1.6.48';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5473,7 +5493,8 @@
     ['1.6.44', 'o', ['Gym bonus: fraksiyon (Steadfast) bonusları için ek kaynaklar (eski API perks + faction upgrades) ve daha geniş filtre eklendi.'], ['Gym bonus: extra sources (legacy API perks + faction upgrades) and a wider filter for faction (Steadfast) bonuses.']],
     ['1.6.45', 'o', ['Gym bonus: sadece gym kazanç (gain) bonusları gösteriliyor; diğer stat bonusları (savaş modifier vb.) çıkarıldı.'], ['Gym bonus: only gym gain bonuses are shown; other stat bonuses (battle modifiers and so on) are excluded.']],
     ['1.6.46', 'o', ['Ayarlar: hazır profiller (Sade / Tam, Geri al ile), sürüm göstergesi ve "Güncellemeyi kontrol et". Merit Tracker: ödülleri ★ ile üstte sabitleme.'], ['Settings: preset profiles (Minimal / Full, with Undo), a version indicator and "Check for updates". Merit Tracker: pin awards on top with a star.']],
-    ['1.6.47', 'o', ['Ana sayfa: Battle Stats kutusunun altında yeni pencere, modifier dahil (ilaç vb. etkili) güncel statlar ve toplam. Ayarlardan kapatılabilir.'], ['Home page: a new panel under the Battle Stats box shows current stats with modifiers (drugs and so on) and the total. Can be turned off in settings.']]
+    ['1.6.47', 'o', ['Ana sayfa: Battle Stats kutusunun altında yeni pencere, modifier dahil (ilaç vb. etkili) güncel statlar ve toplam. Ayarlardan kapatılabilir.'], ['Home page: a new panel under the Battle Stats box shows current stats with modifiers (drugs and so on) and the total. Can be turned off in settings.']],
+    ['1.6.48', 'o', ['Efektif Battle Stats penceresi: modifier değerleri artık API (user/battlestats) üzerinden de okunuyor, başlık/satır bulma daha esnek.'], ['Effective Battle Stats panel: modifiers are now also read from the API (user/battlestats), and heading/row detection is more flexible.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
