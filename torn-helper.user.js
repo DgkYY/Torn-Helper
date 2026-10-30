@@ -5175,7 +5175,7 @@
   var gyeAct = Date.now(), gyeTried = {}, gyeCrawlBusy = false;
   ['mousemove', 'keydown', 'mousedown', 'touchstart', 'wheel'].forEach(function (n) { document.addEventListener(n, function () { gyeAct = Date.now(); }, true); });
   function gyeSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  function gyeBackBtn() { var bs = document.querySelectorAll('#gymroot [class*="actionWrapper___"] button'); for (var i = 0; i < bs.length; i++) if (/^\s*back to gym\s*$/i.test(bs[i].textContent || '')) return bs[i]; return null; }
+  function gyeBackBtn() { var bs = document.querySelectorAll('#gymroot [class*="actionWrapper___"] button'); for (var i = 0; i < bs.length; i++) if (/^\s*(back to gym|cancel)\s*$/i.test(bs[i].textContent || '')) return bs[i]; return null; }
   /* kayıtlı olmayan gymlerin bilgi kutusunu arka planda bir kez açıp okur; yalnızca gym simgesine ve BACK TO GYM düğmesine basar */
   async function gyeCrawl() {
     if (gyeCrawlBusy || gyePend || Date.now() - gyeAct < 4000 || document.hidden) return;
