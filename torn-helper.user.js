@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.63
+// @version      1.6.64
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -23,6 +23,27 @@
 // @connect      tornprobability.com
 // ==/UserScript==
 
+/* Torn PDA / eksik GM_ yedekleri: Tampermonkey zaten tanimliyorsa dokunmaz */
+(function () {
+  var W = window;
+  function def(n, f) { try { if (typeof W[n] === 'undefined') { var ok = false; try { ok = (typeof eval(n)) !== 'undefined'; } catch (e) {} if (!ok) W[n] = f; } } catch (e) {} }
+  var P = 'GMV3_';
+  def('GM_getValue', function (k, d) { try { var v = localStorage.getItem(P + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } });
+  def('GM_setValue', function (k, v) { try { localStorage.setItem(P + k, JSON.stringify(v)); } catch (e) {} });
+  def('GM_deleteValue', function (k) { try { localStorage.removeItem(P + k); } catch (e) {} });
+  def('GM_listValues', function () { var o = []; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf(P) === 0) o.push(k.slice(P.length)); } } catch (e) {} return o; });
+  def('GM_setClipboard', function (t) { try { navigator.clipboard.writeText(String(t)); } catch (e) {} });
+  def('GM_xmlhttpRequest', function (o) {
+    var done = false, to = setTimeout(function () { if (!done) { done = true; o.ontimeout && o.ontimeout(); } }, o.timeout || 30000);
+    function fin(r) { if (done) return; done = true; clearTimeout(to); o.onload && o.onload({ status: r.status, statusText: r.statusText || '', responseText: r.responseText, response: r.responseText, responseHeaders: r.responseHeaders || '', finalUrl: o.url }); }
+    function bad() { if (done) return; done = true; clearTimeout(to); o.onerror && o.onerror(); }
+    try {
+      if (typeof W.PDA_httpGet === 'function' && (!o.method || /^get$/i.test(o.method))) { W.PDA_httpGet(o.url, o.headers || {}).then(fin, bad); }
+      else if (typeof W.PDA_httpPost === 'function') { W.PDA_httpPost(o.url, o.headers || {}, o.data || '').then(fin, bad); }
+      else { fetch(o.url, { method: o.method || 'GET', headers: o.headers, body: o.data }).then(function (r) { return r.text().then(function (t) { fin({ status: r.status, statusText: r.statusText, responseText: t }); }); }, bad); }
+    } catch (e) { bad(); }
+  });
+})();
 (function () {
   'use strict';
   if (window.top !== window.self) return;
@@ -2980,7 +3001,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.63', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.64', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5114,8 +5135,8 @@
     var ds = box.querySelectorAll('.box-value .digit'), str = '', i;
     for (i = 0; i < ds.length; i++) str += (ds[i].textContent || '').trim();
     var d = parseInt(str, 10); if (!(d >= 0)) return;
-    var y = Math.floor(d / 365), r = d - y * 365;
-    var txt = '≈ ' + (d / 365).toFixed(2) + T(' yıl', ' years') + ' (' + y + T(' yıl ', ' y ') + r + T(' gün', ' d') + ')';
+    var y = Math.floor(d / 365), r0 = d - y * 365, mo = Math.floor(r0 / 30.4375), dd = r0 - Math.floor(mo * 30.4375);
+    var txt = y + T(' yıl ', ' y ') + mo + T(' ay ', ' mo ') + dd + T(' gün', ' d');
     if (!old) { old = document.createElement('div'); old.id = 'th-pay'; old.style.cssText = 'text-align:center;margin-top:6px;font-size:13px;font-weight:bold;color:#999;'; box.appendChild(old); }
     if (old.textContent !== txt) old.textContent = txt;
   }
@@ -5762,7 +5783,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.63';
+  var TH_VER = '1.6.64';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5847,7 +5868,8 @@
     ['1.6.60', 'o', ['Profil sayfasında Age (gün) kutusunun altına yıl karşılığı eklendi. Ayarlardan kapatılabilir.'], ['Profile page: years equivalent shown under the Age (days) box. Can be turned off in settings.']],
     ['1.6.61', 'o', ['Telefon (Torn PDA) görünümü: küçük ekranda Saldır penceresi, Uçuş önerileri ve Torn-Helper düğmesi daha az yer kaplıyor (küçük yazı, sıkı satırlar, kaydırılabilir kısa pencere).'], ['Phone (Torn PDA) layout: on small screens the Attack panel, Flight tips and the Torn-Helper button take less space (smaller text, tighter rows, a shorter scrollable panel).']],
     ['1.6.62', 'o', ['Telefonda Saldır penceresi çok daha minimal: yalnızca enerji, hedef adı/durumu, Saldır ve Atla görünüyor.'], ['On phones the Attack panel is much more minimal: only energy, target name/status, Attack and Skip are shown.']],
-    ['1.6.63', 'o', ['Hisse senetleri: Buy ve Sell kutularının üstüne "$ miktar" alanı eklendi; para yazınca (5m, 250k gibi kısaltmalar da olur) hisse adedi otomatik hesaplanıp Torn kutusuna yazılıyor. Ayarlardan kapatılabilir.'], ['Stock market: a "$ amount" field above the Buy and Sell boxes; type money (shorthands like 5m, 250k work) and the share count is calculated and filled into Torn box automatically. Can be turned off in settings.']]
+    ['1.6.63', 'o', ['Hisse senetleri: Buy ve Sell kutularının üstüne "$ miktar" alanı eklendi; para yazınca (5m, 250k gibi kısaltmalar da olur) hisse adedi otomatik hesaplanıp Torn kutusuna yazılıyor. Ayarlardan kapatılabilir.'], ['Stock market: a "$ amount" field above the Buy and Sell boxes; type money (shorthands like 5m, 250k work) and the share count is calculated and filled into Torn box automatically. Can be turned off in settings.']],
+    ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
