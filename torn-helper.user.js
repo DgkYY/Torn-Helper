@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.34
+// @version      1.6.35
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.34', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.35', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3937,9 +3937,9 @@
     else if (!ui.sbhi && st) st.remove();
     var ui0 = document.querySelectorAll('[class*="userInformation___"]')[0], box = document.getElementById('th-sbx2');
     if (!ui0 || (!ui.sbnote && !ui.sblk)) { if (box) box.remove(); return; }
-    if (box && box.isConnected && box.getAttribute('data-n') === (ui.sbnote ? '1' : '0') + (ui.sblk ? '1' : '0')) return;
+    if (box && box.isConnected && box.getAttribute('data-n') === (ui.sbnote ? '1' : '0') + (ui.sblk ? '1' : '0') + T('t', 'e')) return;
     if (box) box.remove();
-    box = document.createElement('div'); box.id = 'th-sbx2'; box.setAttribute('data-n', (ui.sbnote ? '1' : '0') + (ui.sblk ? '1' : '0'));
+    box = document.createElement('div'); box.id = 'th-sbx2'; box.setAttribute('data-n', (ui.sbnote ? '1' : '0') + (ui.sblk ? '1' : '0') + T('t', 'e'));
     box.style.cssText = 'border-top:1px solid rgba(255,255,255,.12);margin-top:6px;';
     if (ui.sbnote) {
       var dn = sbDet(T('Notlar', 'Notes')), ta = sbInput('textarea'); ta.rows = 5; ta.style.resize = 'vertical';
@@ -5239,7 +5239,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.34';
+  var TH_VER = '1.6.35';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5295,7 +5295,8 @@
       'NPC Loot: elapsed time now shows days (e.g. 79d 17h) and the Merit stats status line is shorter.',
       'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M). Items without a catalogue value are priced from the Item Market average.',
       'Faction OC: each role now shows its weight (share in the weighted success) next to its name.'
-    ]]
+    ]],
+    ['1.6.35', 'n', ['Kenar çubuğundaki Notlar ve Bağlantılar başlıkları dil değişince artık yenileniyor (İngilizce seçince Türkçe kalıyordu).'], ['The sidebar Notes and Links headings now update when you switch language (they stayed Turkish before).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
