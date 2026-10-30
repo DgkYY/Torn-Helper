@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.53
+// @version      1.6.56
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -75,7 +75,7 @@
 
   /* pencere durumu: btn (sadece düğme), mini (küçük pencere), full (yan panel) */
   var UI_LS = 'torn-ui-v1';
-  var ui = { state: 'btn', miniMode: 'halloween', side: 'right', corner: '', wideBy: { fac: true }, btn: null, dot: false, sameTab: true, tips: true, atkBtn: false, atkEnergy: 25, retal: false, retalSec: 30, ntf: false, sound: false, chain: false, chainSec: 60, hosp: false, hospSec: 30, keepOpen: false, sw: 520, mpos: null, sbl: false, sbcd: false, sbad: false, sbnote: false, sblk: false, sbhg: false, sbhn: false, sbrw: false, sbrm: false, hdtu: false, hdlv: false, trtm: false, trvl: false, gys: false, stk: false, fcx: false, rnt: false, ilk: false, cdpre: 0, bnf: false, nwl: false, shp: false, crm: false, jlf: false, ahs: false, wbn: false, mtr: false, stk2: false, jlb: false, npc: false, mta: true, ntfEn: true, ntfDr: true, ntfMd: true, ntfBs: true, ocs: false, cst: false, sbtct: false, bzm: false, bzt: false, nocf: false, cfMax: 1000000, hdlu: false, sbca: false, alft: false, caOpen: true, sbhi: false, dd: false, sbpv: false, sboc: false, sbvi: false, chp: false, chpPct: 10, mf: false, mfWarn: true, mfUnder: 1, mfSrc: 'lowest', mfQty: 'all', mfN: 0, mfFloor: 60, bse: true, msm: true, gye: true };
+  var ui = { state: 'btn', miniMode: 'halloween', side: 'right', corner: '', wideBy: { fac: true }, btn: null, dot: false, sameTab: true, tips: true, atkBtn: false, atkEnergy: 25, retal: false, retalSec: 30, ntf: false, sound: false, chain: false, chainSec: 60, hosp: false, hospSec: 30, keepOpen: false, sw: 520, mpos: null, sbl: false, sbcd: true, sbad: true, sbnote: false, sblk: false, sbhg: false, sbhn: false, sbrw: false, sbrm: true, hdtu: false, hdlv: false, trtm: false, trvl: false, gys: true, stk: false, fcx: false, rnt: false, ilk: false, cdpre: 0, bnf: false, nwl: false, shp: false, crm: false, jlf: false, ahs: false, wbn: false, mtr: false, stk2: false, jlb: false, npc: false, mta: true, ntfEn: true, ntfDr: true, ntfMd: true, ntfBs: true, ocs: false, cst: false, sbtct: true, bzm: false, bzt: false, nocf: false, cfMax: 1000000, hdlu: false, sbca: false, alft: false, caOpen: true, sbhi: false, dd: false, sbpv: true, sboc: true, sbvi: false, chp: true, chpPct: 10, mf: true, mfWarn: true, mfUnder: 1, mfSrc: 'lowest', mfQty: 'all', mfN: 0, mfFloor: 60, bse: true, msm: true, gye: true };
   try { Object.assign(ui, JSON.parse(LS.getItem(UI_LS) || '{}')); } catch (e) {}
   if (ui.state !== 'mini' && !(ui.keepOpen && ui.state === 'full')) ui.state = 'btn';
   if (!ui.corner) ui.corner = ui.side === 'left' ? 'tl' : 'tr';
@@ -2967,7 +2967,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.53', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.56', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5123,7 +5123,13 @@
     var sb = document.getElementById('sidebar'), tx = sb ? (sb.innerText || '') : '', h = /Happy:\s*([\d,]+)\s*\/\s*([\d,]+)/.exec(tx), e = /Energy:\s*([\d,]+)\s*\/\s*([\d,]+)/.exec(tx);
     return { h: h ? gyeNum(h[1]) : 0, e: e ? gyeNum(e[1]) : 0, em: e ? gyeNum(e[2]) : 0 };
   }
-  function gyeGym() { var r = document.getElementById('gymroot'), m = r ? /Welcome to (.+?)\s*!/.exec(r.innerText || '') : null; return m ? m[1].trim() : 'gym'; }
+  var gyeActive = '';
+  function gyeGym() {
+    var r = document.getElementById('gymroot'); if (!r) return gyeActive || 'gym';
+    if (r.querySelector('[class*="gymDetailsWrapper___"]') && gyeActive) return gyeActive;
+    var m = /Welcome to (.+?)\s*!/.exec(r.innerText || ''); if (m) gyeActive = m[1].trim();
+    return gyeActive || 'gym';
+  }
   document.addEventListener('click', function (ev) {
     if (!ui.gye) return;
     var b = ev.target && ev.target.closest ? ev.target.closest('button[aria-label^="Train "]') : null; if (!b) return;
@@ -5180,20 +5186,19 @@
   async function gyeCrawl() {
     if (gyeCrawlBusy || gyePend || Date.now() - gyeAct < 4000 || document.hidden) return;
     var root = document.getElementById('gymroot'); if (!root || root.querySelector('[class*="gymDetailsWrapper___"] [class*="progressBar___"]')) return;
-    var gd = gmGet('gym-dots', {}) || {}, tiles = root.querySelectorAll('button[class*="gymButton___"]'), todo = [], i;
+    var gd = gmGet('gym-dots', {}) || {}, tr0 = gmGet('gym-tried', {}) || {}, tiles = root.querySelectorAll('button[class*="gymButton___"]'), todo = [], i;
     for (i = 0; i < tiles.length; i++) {
       var lb = tiles[i].getAttribute('aria-label') || '', m = /^(.+?)\.\s*Membership cost/i.exec(lb);
       if (!m || tiles[i].disabled || tiles[i].getAttribute('aria-disabled') === 'true') continue;
-      var nm = m[1].trim(); if ((gd[nm] && gd[nm].strength != null) || gyeTried[nm]) continue;
+      var nm = m[1].trim(); if ((gd[nm] && gd[nm].strength != null) || gyeTried[nm] || (tr0[nm] && Date.now() - tr0[nm] < 1209600000)) continue;
       todo.push([nm, tiles[i]]);
     }
     if (!todo.length) return;
-    gyeCrawlBusy = true; var prevOp = root.style.opacity;
+    gyeCrawlBusy = true;
     try {
-      root.style.opacity = '0';
       for (i = 0; i < todo.length; i++) {
         if (Date.now() - gyeAct < 1500 || gyePend) break;
-        gyeTried[todo[i][0]] = 1; todo[i][1].click();
+        gyeTried[todo[i][0]] = 1; tr0[todo[i][0]] = Date.now(); gmSet('gym-tried', tr0); todo[i][1].click();
         var ok = false, w;
         for (w = 0; w < 12; w++) { await gyeSleep(250); if (root.querySelector('[class*="gymDetailsWrapper___"] [class*="progressBar___"]')) { ok = true; break; } }
         if (!ok) break;
@@ -5207,7 +5212,7 @@
         for (w = i + 1; w < todo.length; w++) { for (var q = 0; q < tiles.length; q++) { var ml = /^(.+?)\.\s*Membership cost/i.exec(tiles[q].getAttribute('aria-label') || ''); if (ml && ml[1].trim() === todo[w][0]) todo[w][1] = tiles[q]; } }
       }
     } catch (e) {}
-    root.style.opacity = prevOp; gyeCrawlBusy = false;
+    gyeCrawlBusy = false;
   }
   function gyeTick() {
     var old = document.querySelectorAll('.th-gye'), i;
@@ -5611,7 +5616,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.53';
+  var TH_VER = '1.6.56';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5686,7 +5691,10 @@
     ['1.6.50', 'o', ['Duke görev özeti: "Use X while in jail/hospital" gibi daha fazla hedef cümlesi Türkçeye çevriliyor; çeviri kontrolü yapıldı.'], ['Duke quest summary: more objective phrases (such as "Use X while in jail/hospital") are translated to Turkish; translation audit done.']],
     ['1.6.51', 'o', ['Duke görev özeti: "Successfully mug X" ve "Give them all of their money back" gibi hedef cümleleri Türkçeye çevriliyor.'], ['Duke quest summary: objective phrases like "Successfully mug X" and "Give them all of their money back" are now translated to Turkish.']],
     ['1.6.52', 'o', ['Gym: her statın altında tahmini kazanç (antrenman başına, şu anki ve dolu enerjiyle); gym çarpanları API ve gym bilgi kutusundan, sen boştayken arka planda otomatik okunuyor ve kaydediliyor. Ayarlardan kapatılabilir. İletişim bilgileri eklendi.'], ['Gym: estimated gain under each stat (per train, with current and full energy); gym multipliers are read automatically from the API and the gym info boxes while you are idle, then stored. Can be turned off in settings. Contact info added.']],
-    ['1.6.53', 'o', ['Gym tahmini: sahip olmadığın gymlerin bilgi kutusu da arka planda okunabiliyor (Cancel düğmesi ile kapatılıyor, üyelik etkinleştirilmez).'], ['Gym estimate: info boxes of gyms you do not own can now be read in the background too (closed with Cancel, membership is never activated).']]
+    ['1.6.53', 'o', ['Gym tahmini: sahip olmadığın gymlerin bilgi kutusu da arka planda okunabiliyor (Cancel düğmesi ile kapatılıyor, üyelik etkinleştirilmez).'], ['Gym estimate: info boxes of gyms you do not own can now be read in the background too (closed with Cancel, membership is never activated).']],
+    ['1.6.54', 'n', ['Yeni kurulumlarda varsayılan ayarlar: kenar çubuğu bilgileri (ilaç/tıbbi/booster cooldown, TCT saati, şirket bağımlılığı, puan değeri, OC süresi, hatırlatıcılar), Gym uzman hesabı ve tahmini, Item Market Doldur düğmesi ve ucuz ilan vurgusu açık; geri kalanı kapalı. Mevcut ayarların değişmez.'], ['Defaults for new installs: sidebar info (drug/medical/booster cooldowns, TCT clock, company addiction, point value, OC timer, reminders), Gym specialist calculator and estimate, the Item Market Fill button and cheap-listing highlight are on; the rest is off. Your existing settings do not change.']],
+    ['1.6.55', 'n', ['Gym tahmini: bir gym simgesine tıklayınca bilgi kutusu açıkken tahmin başka gymin değerine kaymıyor; aktif gym sabit kalıyor.'], ['Gym estimate: while a gym info box is open after clicking a gym icon, the estimate no longer jumps to another gym; the active gym stays fixed.']],
+    ['1.6.56', 'n', ['Gym: arka planda gym bilgisi okunurken sayfa artık kararmıyor; okunamayan gymler 14 gün boyunca tekrar denenmiyor.'], ['Gym: the page no longer goes dark while gym info is read in the background; gyms that cannot be read are not retried for 14 days.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
