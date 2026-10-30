@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.44
+// @version      1.6.45
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2915,7 +2915,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.44', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.45', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4170,6 +4170,7 @@
     var c = gmGet('gym-perks2', null); if (!c || !c.d || !c.d.length) return null;
     var tot = 0, by = {};
     c.d.forEach(function (x) {
+      if (!/gain/i.test(x[1]) || /working|crime|racing|skill|point|nerve|merit|reward/i.test(x[1])) return;
       var m = /(\d+(?:\.\d+)?)\s*%/.exec(x[1]); if (!m) return;
       var w = /strength|defense|speed|dexterity/i.exec(x[1]);
       if (w && w[0].toLowerCase() !== stat) return;
@@ -5296,7 +5297,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.44';
+  var TH_VER = '1.6.45';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5362,7 +5363,8 @@
     ['1.6.41', 'o', ['Scamming: hedef satırları artık yönteme göre (Delivery scam vb.) ve adıma göre (Respond, Capitalize) ayrı kaydediliyor; satırda yöntemin toplamı görünüyor.'], ['Scamming: target rows are now logged per method (Delivery scam and so on) and per step (Respond, Capitalize); each row shows the method total.']],
     ['1.6.42', 'o', ['Card Skimming: Recover sonucundaki kart sayısı artık kaydediliyor ve satırda nerve başına kart olarak görünüyor.'], ['Card Skimming: the number of card details in a Recover result is now logged and shown per nerve on the row.']],
     ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks).'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']],
-    ['1.6.44', 'o', ['Gym bonus: fraksiyon (Steadfast) bonusları için ek kaynaklar (eski API perks + faction upgrades) ve daha geniş filtre eklendi.'], ['Gym bonus: extra sources (legacy API perks + faction upgrades) and a wider filter for faction (Steadfast) bonuses.']]
+    ['1.6.44', 'o', ['Gym bonus: fraksiyon (Steadfast) bonusları için ek kaynaklar (eski API perks + faction upgrades) ve daha geniş filtre eklendi.'], ['Gym bonus: extra sources (legacy API perks + faction upgrades) and a wider filter for faction (Steadfast) bonuses.']],
+    ['1.6.45', 'o', ['Gym bonus: sadece gym kazanç (gain) bonusları gösteriliyor; diğer stat bonusları (savaş modifier vb.) çıkarıldı.'], ['Gym bonus: only gym gain bonuses are shown; other stat bonuses (battle modifiers and so on) are excluded.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
