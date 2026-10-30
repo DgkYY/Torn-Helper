@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.43
+// @version      1.6.44
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2915,7 +2915,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.43', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.44', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5296,7 +5296,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.43';
+  var TH_VER = '1.6.44';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5361,7 +5361,8 @@
     ['1.6.40', 'o', ['Scamming: Farm Email Addresses artık çiftlenen e-posta sayısını nerve başına kaydediyor (örn. ort. 13.3 email/nerve).'], ['Scamming: Farm Email Addresses now logs the number of emails farmed per nerve (e.g. avg 13.3 email/nerve).']],
     ['1.6.41', 'o', ['Scamming: hedef satırları artık yönteme göre (Delivery scam vb.) ve adıma göre (Respond, Capitalize) ayrı kaydediliyor; satırda yöntemin toplamı görünüyor.'], ['Scamming: target rows are now logged per method (Delivery scam and so on) and per step (Respond, Capitalize); each row shows the method total.']],
     ['1.6.42', 'o', ['Card Skimming: Recover sonucundaki kart sayısı artık kaydediliyor ve satırda nerve başına kart olarak görünüyor.'], ['Card Skimming: the number of card details in a Recover result is now logged and shown per nerve on the row.']],
-    ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks). Fraksiyon bonusları için ek kaynaklar eklendi.'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']]
+    ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks).'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']],
+    ['1.6.44', 'o', ['Gym bonus: fraksiyon (Steadfast) bonusları için ek kaynaklar (eski API perks + faction upgrades) ve daha geniş filtre eklendi.'], ['Gym bonus: extra sources (legacy API perks + faction upgrades) and a wider filter for faction (Steadfast) bonuses.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
