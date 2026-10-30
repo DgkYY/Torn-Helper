@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.33
+// @version      1.6.34
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.33', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.34', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5239,7 +5239,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.33';
+  var TH_VER = '1.6.34';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5281,13 +5281,16 @@
     ['1.6.31', 'o', ['NPC Loot: kenar çubuğunda Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkışa kalan süre ve loot seviyesi (30/90/210/450 dk). Ayar: Profil ve saldırı bölümünde.'], ['NPC Loot: sidebar panel with time to hospital release and loot level (30/90/210/450 min) for Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge. Setting: Profile and attacks section.']],
     ['1.6.32', 'o', ['NPC Loot: çıkış zamanı bilinmiyorsa son aktivite zamanına göre tahmini seviye de gösteriliyor (doğrulanmadı, gerçek seviyeyle karşılaştır).'], ['NPC Loot: when the release time is unknown, an estimated level from the last action time is shown (unverified, compare with the real level).']],
     ['1.6.33', 'o', [
-      'Crimes kaydı: Hustling oyun satırlarında (Cornhole, Snail Racing, Find the Lady, Shell Game) $/nerve artık Gather Audience nerve payını da içeriyor.',
+      'Crimes kaydı: Hustling oyun satırlarında (Cornhole, Snail Racing, Find the Lady, Shell Game) $/nerve artık Gather Audience nerve payını da içeriyor.'
+    ], [
+      'Crimes logging: Hustling game rows (Cornhole, Snail Racing, Find the Lady, Shell Game) now include a share of the Gather Audience nerve in $/nerve.'
+    ]],
+    ['1.6.34', 'o', [
       'Disposal: kayıt artık seçilen yönteme göre ayrı tutuluyor (örn. General Waste · Bury), çünkü yöntemlerin nerve ve kazancı farklı.',
       'NPC Loot: geçen süre artık gün olarak gösteriliyor (örn. 79g 17s); Merit istatistik durum satırı kısaltıldı.',
       'Hisseler: eşya veren bonuslarda eşya adı ve piyasa değeri yazılıyor (örn. 1x Drug Pack ≈ $4.48M). Katalog değeri olmayan eşyalar Item Market ortalamasından fiyatlanıyor.',
       'Faction OC: her rolün adının yanında ağırlıklı hesaptaki payı yazıyor.'
     ], [
-      'Crimes logging: Hustling game rows (Cornhole, Snail Racing, Find the Lady, Shell Game) now include a share of the Gather Audience nerve in $/nerve.',
       'Disposal: logging is now kept per chosen method (e.g. General Waste · Bury) because methods differ in nerve and payout.',
       'NPC Loot: elapsed time now shows days (e.g. 79d 17h) and the Merit stats status line is shorter.',
       'Stocks: for item bonuses the item and its market value are written (e.g. 1x Drug Pack ≈ $4.48M). Items without a catalogue value are priced from the Item Market average.',
