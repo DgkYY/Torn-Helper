@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.36
+// @version      1.6.38
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2887,7 +2887,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.36', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.38', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3483,20 +3483,6 @@
     else if (uniq) note = '';
     if (qtyInp) { var qv = mfQtyVal(Number(qtyInp.getAttribute('data-money')) || 0); if (qv != null) mfSet(qtyInp, qv); }
     return { note: note, q: q, uniq: uniq && !!ui.mfWarn };
-  }
-  function mfAnchor(inp, name) {
-    var el = inp;
-    for (var i = 0; i < 8 && el.parentElement; i++) {
-      el = el.parentElement;
-      if (el.querySelectorAll('input[aria-label$=" price"]').length > 1) return null;
-      var c = el.querySelectorAll('span, a, b, p, div');
-      for (var k = 0; k < c.length; k++) {
-        if (c[k].children.length || c[k].querySelector('input') || c[k].classList.contains('th-fill')) continue;
-        var tx = (c[k].textContent || '').trim();
-        if (tx.indexOf(name) === 0 && tx.length < name.length + 10) return c[k];
-      }
-    }
-    return null;
   }
   function mfBtnCss(el, bg) { el.style.cssText = 'margin-left:8px;padding:2px 8px;border-radius:6px;border:1px solid rgba(0,0,0,.4);background:' + bg + ';color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;vertical-align:middle;'; }
   function mfPlace() {
@@ -4852,7 +4838,7 @@
     var pn = document.createElement('div'); pn.id = 'th-mta';
     var host = document.querySelectorAll('[class*="userInformation___"]')[0];
     pn.style.cssText = host ? 'box-sizing:border-box;width:100%;margin-top:6px;padding:6px 8px;background:#1f2937;border:1px solid #4b5563;border-radius:4px;font:12px Arial,sans-serif;color:#e5e7eb;' : 'position:fixed;z-index:2147482000;right:14px;bottom:14px;width:270px;max-height:50vh;overflow:auto;padding:8px 10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;font:12px Arial,sans-serif;color:#e5e7eb;';
-    var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ctx[3]) + '' + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
+    var h = '<div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px;"><span>Merit · ' + T(ctx[3], ({ 'Uçuş': 'Travel', 'Saldırı': 'Attack', 'Hapishane': 'Jail', 'Hastane': 'Hospital', 'Banka': 'Bank', 'Eğitim': 'Education', 'Şirket': 'Company', 'Borsa': 'Stock market' })[ctx[3]] || ctx[3]) + '' + '</span><span data-x="1" style="cursor:pointer;color:#9ca3af;">✕</span></div>';
     al.forEach(function (x) { h += mtAwRow(x[0], x[1]); });
     if (!al.length) { var st2 = gmGet('merit-aw-st', null); h += '<div style="color:#9ca3af;">' + T('Bu sayfa için kayıtlı ödül yok. ', 'No stored awards for this page. ') + (st2 ? String(st2.m).replace(/</g, '&lt;') : '') + '</div>'; }
     if (al.some(function (x) { return x[1][0] === 0 && !x[1][1]; })) h += '<div style="margin-top:4px;font-size:10px;color:#9ca3af;">' + String(gmGet('merit-trv-st', '') || '').replace(/</g, '&lt;') + '</div>';
@@ -5098,14 +5084,14 @@
     await stkLoad();
     var c = gmGet('stk-data', null), d = c && c.d || {};
     for (var i = 0; i < rows.length; i++) {
-      var ul = rows[i], id = ul.id, nx = ul.nextElementSibling, el = nx && nx.classList && nx.classList.contains('th-stk') ? nx : null;
+      var ul = rows[i], id = ul.id, nx = ul.previousElementSibling, el = nx && nx.classList && nx.classList.contains('th-stk') ? nx : null;
       var pl = ul.querySelector('[class*="stockPrice"]'), dv = ul.querySelector('[class*="stockDividend"]');
       var pm = pl && /\$([\d,\.]+)/.exec(pl.getAttribute('aria-label') || ''), dm = dv && /Dividend:\s*(.*?)\.\s*Status/.exec(dv.getAttribute('aria-label') || '');
       var sig = (pm ? pm[1] : '') + '|' + (dm ? dm[1] : '') + '|' + (d[id] ? 1 : 0);
       if (el && el.getAttribute('data-s') === sig) continue;
-      if (!el) { el = document.createElement('div'); el.className = 'th-stk'; ul.parentNode.insertBefore(el, ul.nextSibling); }
+      if (!el) { el = document.createElement('div'); el.className = 'th-stk'; ul.parentNode.insertBefore(el, ul); }
       el.setAttribute('data-s', sig);
-      el.style.cssText = 'font:12px Arial,sans-serif;color:#9ca3af;padding:2px 12px 4px;';
+      el.style.cssText = 'font:12px Arial,sans-serif;color:#9ca3af;padding:6px 12px 2px;border-left:3px solid #4b5563;';
       if (!d[id]) { el.textContent = T('Blok bilgisi yok', 'No block data') + (c && c.m ? ' (' + c.m + ')' : ''); continue; }
       var price = pm ? parseFloat(pm[1].replace(/,/g, '')) : 0, cost = price * d[id].r, val = dm ? await stkValue(dm[1]) : null;
       var txt = T('Blok: ', 'Block: ') + d[id].r.toLocaleString('en-US') + T(' pay = ', ' shares = ') + stkFmt(cost) + ' · ' + T('her ', 'every ') + d[id].f + T(' günde ', ' days ');
@@ -5239,7 +5225,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.36';
+  var TH_VER = '1.6.38';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5297,7 +5283,9 @@
       'Faction OC: each role now shows its weight (share in the weighted success) next to its name.'
     ]],
     ['1.6.35', 'n', ['Kenar çubuğundaki Notlar ve Bağlantılar başlıkları dil değişince artık yenileniyor (İngilizce seçince Türkçe kalıyordu).'], ['The sidebar Notes and Links headings now update when you switch language (they stayed Turkish before).']],
-    ['1.6.36', 'n', ['İngilizce arayüzde Yurtdışı fiyatları kartındaki "/ SAAT" artık "/ HOUR" yazıyor.'], ['In the English interface the Abroad prices card now says "/ HOUR" instead of "/ SAAT".']]
+    ['1.6.36', 'n', ['İngilizce arayüzde Yurtdışı fiyatları kartındaki "/ SAAT" artık "/ HOUR" yazıyor.'], ['In the English interface the Abroad prices card now says "/ HOUR" instead of "/ SAAT".']],
+    ['1.6.37', 'n', ['İngilizce arayüzde Merit Tracker pencere başlığı (Uçuş, Saldırı, Borsa vb.) artık İngilizce.'], ['In the English interface the Merit Tracker panel title (Travel, Attack, Stock market and so on) is now in English.']],
+    ['1.6.38', 'o', ['Borsa: her hissenin bilgi satırı artık kendi satırının üstünde (altında olunca bir sonraki hisseye aitmiş gibi görünüyordu).'], ['Stocks: each stock info line now sits above its own row (below it, it looked like it belonged to the next stock).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
