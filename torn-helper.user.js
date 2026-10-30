@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.39
+// @version      1.6.43
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2915,7 +2915,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.39', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.43', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4138,8 +4138,41 @@
     });
     return out;
   }
+  var gybBusy = false, GYB_SRC = { faction_perks: ['fraksiyon', 'faction'], education_perks: ['eğitim', 'education'], property_perks: ['mülk', 'property'], job_perks: ['iş', 'job'], book_perks: ['kitap', 'book'], stock_perks: ['hisse', 'stock'], merit_perks: ['merit', 'merit'], enhancer_perks: ['enhancer', 'enhancer'], faction: ['fraksiyon', 'faction'], education: ['eğitim', 'education'], property: ['mülk', 'property'] };
+  async function gybLoad() {
+    var c = gmGet('gym-perks', null);
+    if (gybBusy || !keyOk() || (c && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
+    gybBusy = true;
+    try {
+      var j = null, out = [];
+      try { j = await prApi('user/perks'); } catch (e0) { j = null; }
+      if (!j || j.error) { var kk = keyOk(); j = await (await gmFetch('https://api.torn.com/user/?selections=perks&comment=torn-helper&key=' + encodeURIComponent(kk))).json(); }
+      (function walk(o, src, d) {
+        if (!o || d > 4) return;
+        if (Array.isArray(o)) { o.forEach(function (x) { if (typeof x === 'string') out.push([src, x]); else walk(x, src, d + 1); }); return; }
+        if (typeof o === 'object') Object.keys(o).forEach(function (k) { walk(o[k], GYB_SRC[k] ? k : src, d + 1); });
+      })(j, '', 0);
+      gmSet('gym-perks', { at: Date.now(), d: out.filter(function (x) { return /gym/i.test(x[1]); }), n: out.length });
+    } catch (e) { gmSet('gym-perks', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now(), err: String((e && e.message) || e) }); }
+    gybBusy = false;
+  }
+  function gybFor(stat) {
+    var c = gmGet('gym-perks', null); if (!c || !c.d || !c.d.length) return null;
+    var tot = 0, by = {};
+    c.d.forEach(function (x) {
+      var m = /(\d+(?:\.\d+)?)\s*%/.exec(x[1]); if (!m) return;
+      var w = /strength|defense|speed|dexterity/i.exec(x[1]);
+      if (w && w[0].toLowerCase() !== stat) return;
+      var v = Number(m[1]), sn = GYB_SRC[x[0]] ? T(GYB_SRC[x[0]][0], GYB_SRC[x[0]][1]) : T('diğer', 'other');
+      tot += v; by[sn] = (by[sn] || 0) + v;
+    });
+    if (!tot) return null;
+    var parts = Object.keys(by).map(function (k) { return k + ' +' + Math.round(by[k] * 100) / 100 + '%'; });
+    return { ok: true, c: '#7dd3fc', tx: T('Bonus: +', 'Bonus: +') + Math.round(tot * 100) / 100 + '% (' + parts.join(', ') + ')' };
+  }
   function gysStatInject(chosen, st) {
     var lines = gysStatLines(chosen, st), lis = document.querySelectorAll('#gymroot ul[class*="properties___"] > li');
+    gybLoad(); Object.keys(lines).forEach(function (k2) { var bl = gybFor(k2); if (bl) lines[k2].push(bl); });
     for (var i = 0; i < lis.length; i++) {
       var li = lis[i], c = ' ' + String(li.className || ''), key = '';
       for (var k in GYS_TR) if (c.indexOf(' ' + k + '___') >= 0) key = k;
@@ -4153,7 +4186,7 @@
         if (pc && kids.length > 1) pc.insertBefore(ex, kids[1]); else if (pc) pc.appendChild(ex); else continue;
       }
       ex.setAttribute('data-s', sg); ex.innerHTML = '';
-      lines[key].forEach(function (l) { var d = document.createElement('div'); d.textContent = l.tx; d.style.color = l.ok ? '#86efac' : '#f87171'; ex.appendChild(d); });
+      lines[key].forEach(function (l) { var d = document.createElement('div'); d.textContent = l.tx; d.style.color = l.c || (l.ok ? '#86efac' : '#f87171'); ex.appendChild(d); });
     }
   }
   var gysSig = '';
@@ -5253,7 +5286,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.39';
+  var TH_VER = '1.6.43';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5314,7 +5347,11 @@
     ['1.6.36', 'n', ['İngilizce arayüzde Yurtdışı fiyatları kartındaki "/ SAAT" artık "/ HOUR" yazıyor.'], ['In the English interface the Abroad prices card now says "/ HOUR" instead of "/ SAAT".']],
     ['1.6.37', 'n', ['İngilizce arayüzde Merit Tracker pencere başlığı (Uçuş, Saldırı, Borsa vb.) artık İngilizce.'], ['In the English interface the Merit Tracker panel title (Travel, Attack, Stock market and so on) is now in English.']],
     ['1.6.38', 'o', ['Borsa: her hissenin bilgi satırı artık kendi satırının üstünde (altında olunca bir sonraki hisseye aitmiş gibi görünüyordu).'], ['Stocks: each stock info line now sits above its own row (below it, it looked like it belonged to the next stock).']],
-    ['1.6.39', 'n', ['Ayarlarda arama kutusu: yazdıkça yalnızca eşleşen ayarlar görünür (Esc temizler).'], ['Settings search box: only matching settings are shown as you type (Esc clears).']]
+    ['1.6.39', 'n', ['Ayarlarda arama kutusu: yazdıkça yalnızca eşleşen ayarlar görünür (Esc temizler).'], ['Settings search box: only matching settings are shown as you type (Esc clears).']],
+    ['1.6.40', 'o', ['Scamming: Farm Email Addresses artık çiftlenen e-posta sayısını nerve başına kaydediyor (örn. ort. 13.3 email/nerve).'], ['Scamming: Farm Email Addresses now logs the number of emails farmed per nerve (e.g. avg 13.3 email/nerve).']],
+    ['1.6.41', 'o', ['Scamming: hedef satırları artık yönteme göre (Delivery scam vb.) ve adıma göre (Respond, Capitalize) ayrı kaydediliyor; satırda yöntemin toplamı görünüyor.'], ['Scamming: target rows are now logged per method (Delivery scam and so on) and per step (Respond, Capitalize); each row shows the method total.']],
+    ['1.6.42', 'o', ['Card Skimming: Recover sonucundaki kart sayısı artık kaydediliyor ve satırda nerve başına kart olarak görünüyor.'], ['Card Skimming: the number of card details in a Recover result is now logged and shown per nerve on the row.']],
+    ['1.6.43', 'o', ['Gym: her statın altında, fraksiyon (Steadfast vb.), eğitim ve diğer kaynaklardan gelen gym kazanç bonusu (+%) gösteriliyor (API perks).'], ['Gym: under each stat the gym gain bonus (+%) from faction (Steadfast and so on), education and other sources is shown (API perks).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
@@ -5436,6 +5473,11 @@
     return '';
   }
   function crmRow(w) { var r = w; for (var i = 0; i < 4 && r; i++) { if (r.querySelectorAll && r.querySelectorAll('.crime-option')[0]) return r; r = r.parentNode; } return null; }
+  function crmScam(row, crime) {
+    if (!row || !/scamming/i.test(crime)) return null;
+    var m = row.querySelector('[class*="scamMethod"]'), b = row.querySelector('.commit-button [class*="title___"]');
+    return m ? { m: m.textContent.trim() + ' scam', b: b ? b.textContent.trim() : '' } : null;
+  }
   function crmMeth(row, crime) {
     if (!/disposal/i.test(crime) || !row) return '';
     var b = row.querySelector('.commit-button [class*="title___"]'), t = b ? b.textContent.trim() : '', n = row.querySelector('.commit-button [class*="nerve___"]');
@@ -5454,15 +5496,16 @@
       if (o.getAttribute('data-thcr')) continue;
       o.setAttribute('data-thcr', '1');
       if (!crmSeen) continue; // sayfa açılırken zaten duran sonuç: sayma
-      var row = crmRow(o.parentNode), opt = '', nv = 0;
+      var row = crmRow(o.parentNode), opt = '', nv = 0, scm = crmScam(crmRow(o.parentNode), crime);
       if (row) {
         var nm = row.querySelectorAll('[class*="crimeOptionSection"][class*="flexGrow"]')[0];
         if (nm) opt = crmName(nm) + crmMeth(row, crime);
+        if (scm) opt = scm.m + (scm.b ? ' · ' + scm.b : '');
         var ne = row.querySelectorAll('[class*="nerve___"]')[0];
         nv = ne ? Number(String(ne.textContent).replace(/[^\d]/g, '')) : 0;
       }
       var te = o.querySelectorAll('[class*="outcomeReward"] [class*="title___"]')[0], title = te ? te.textContent.trim() : '';
-      var ok = /success/i.test(title), money = 0, itv = 0, itn = 0, dvd = 0, rw = o.querySelectorAll('[class*="rewards___"] [class*="reward___"]');
+      var ok = scm ? !/fail/i.test(title) : /success/i.test(title), money = 0, itv = 0, itn = 0, dvd = 0, emc = 0, cdc = 0, rw = o.querySelectorAll('[class*="rewards___"] [class*="reward___"]');
       for (var r = 0; r < rw.length; r++) {
         var tx = rw[r].textContent.trim();
         var ims = rw[r].querySelectorAll('img.torn-item');
@@ -5475,6 +5518,10 @@
           }
           continue;
         }
+        var cd2 = tx.match(/^(\d[\d,]*)\s+card details?/i);
+        if (cd2) { cdc += Number(cd2[1].replace(/,/g, '')); continue; }
+        var em2 = tx.match(/^farmed\s+(\d[\d,]*)\s+email/i);
+        if (em2) { emc += Number(em2[1].replace(/,/g, '')); continue; }
         var dm = tx.match(/^copying\s+(\d[\d,]*)\s/i);
         if (dm) { dvd += Number(dm[1].replace(/,/g, '')); continue; }
         var mo = tx.match(/\$\s*(\d[\d,]*)/);
@@ -5488,7 +5535,7 @@
       if (act && /pickpocket/i.test(crime)) ks.push(crime + '|@' + act);
       for (var ki = 0; ki < ks.length; ki++) {
         var k = ks[ki], d = data[k] || { n: 0, ok: 0, m: 0, nv: 0, it: 0, dv: 0 };
-        d.n++; d.dv = (d.dv || 0) + dvd; if (ok) d.ok++; d.m += money + itv; d.nv += nv; d.it += itn;
+        d.n++; d.dv = (d.dv || 0) + dvd; d.em = (d.em || 0) + emc; d.cd = (d.cd || 0) + cdc; if (ok) d.ok++; d.m += money + itv; d.nv += nv; d.it += itn;
         data[k] = d;
       }
       gmSet('crm', data);
@@ -5499,7 +5546,12 @@
       var nm2 = rows[j].querySelectorAll('[class*="crimeOptionSection"][class*="flexGrow"]')[0];
       if (!nm2) continue;
       var nmt = crmName(nm2) + crmMeth(rows[j], crime);
-      var dd = data[crime + '|' + nmt], ln = nm2.querySelectorAll('.th-crm')[0];
+      var dd = data[crime + '|' + nmt], ln = nm2.querySelectorAll('.th-crm')[0], scj = crmScam(rows[j], crime);
+      if (scj) {
+        dd = { n: 0, ok: 0, m: 0, nv: 0, it: 0, dv: 0, em: 0 };
+        Object.keys(data).forEach(function (kx) { if (kx.indexOf(crime + '|' + scj.m + ' · ') === 0) { var q = data[kx]; dd.n += q.n; dd.ok += q.ok; dd.m += q.m; dd.nv += q.nv; dd.it += q.it || 0; dd.dv += q.dv || 0; dd.em += q.em || 0; } });
+        nmt = scj.m;
+      }
       if (!ln) { ln = document.createElement('span'); ln.className = 'th-crm'; ln.style.cssText = 'display:block;font:700 10px/11px Arial,sans-serif;color:#9ca3af;white-space:nowrap;'; nm2.appendChild(ln); }
       var txt = T('veri yok', 'no data');
       if (dd && dd.n) {
@@ -5509,7 +5561,7 @@
           ['Cornhole', 'Snail Racing', 'Find the Lady', 'Shell Game'].forEach(function (g) { gn += (data[crime + '|' + g] || {}).n || 0; });
           if (gn && gnv && dd.nv) { nvA = dd.nv + gnv * dd.n / gn; pn = dd.m / nvA; gsh = true; }
         }
-        txt = (dd.nv && (dd.m || dd.dv) ? T('ort. ', 'avg ') + (dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + (gsh ? T('/nerve (Gather payı dahil) · ', '/nerve (incl. Gather share) · ') : '/nerve · ') : '') + dd.n + T(' deneme · %', ' tries · ') + Math.round(dd.ok / dd.n * 100) + T(' başarı', '% success') + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
+        txt = (dd.nv && (dd.m || dd.dv || dd.em || dd.cd) ? T('ort. ', 'avg ') + (dd.cd && !dd.m && !dd.dv && !dd.em ? Math.round(dd.cd / dd.nv * 10) / 10 + T(' kart', ' cards') : dd.em && !dd.m && !dd.dv ? Math.round(dd.em / dd.nv * 10) / 10 + ' email' : dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + (gsh ? T('/nerve (Gather payı dahil) · ', '/nerve (incl. Gather share) · ') : '/nerve · ') : '') + dd.n + T(' deneme · %', ' tries · ') + Math.round(dd.ok / dd.n * 100) + T(' başarı', '% success') + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
         dd._pn = pn;
         if (dd.n >= 10 && !(dd.dv && !dd.m) && dd.m && pn > bestV) { bestV = pn; best = ln; }
       }
