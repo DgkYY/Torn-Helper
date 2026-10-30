@@ -1,6 +1,6 @@
 # Torn-Helper
 
-**English** 
+# English
 
 A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.torn.com): target list with quick-attack buttons, Halloween/Mug queue, Ranked War mode, faction management tools and an abroad-price checker. The interface is available in English and Turkish.
 
@@ -16,6 +16,11 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
   - The treat counter reads your real treats collected and basket level from Torn while the Halloween event runs.
   - Optional: while the Halloween event is on and your energy is 25 or more, an Attack button appears next to the open button. It refreshes the next target's status, switches to the mini window and opens the attack page. You still press the attack on Torn yourself. Off by default (it needs one background request per minute); it disappears when the event ends.
   - Optional: Retal. Every 30 or 60 seconds the script reads your faction member list. When a member is hospitalized by someone outside the faction and that attacker is Okay, a Retal button appears under the open button and opens the attack page. Hospitalized-by-someone (hidden) attackers are skipped. Off by default (2 background requests per minute). Torn's wiki says a retaliation hit must be hospitalisation only and gives a 1.5x multiplier; the button disappears after 5 minutes.
+  - Purchase log: on the abroad shop page the script notes each Buy you press (only when Torn's "purchased X / 18" counter really goes up) and the Abroad prices screen shows cost and estimated profit for this flight and the last 24 hours. Profit uses the Torn market value from the price service, not the profit column other scripts add to the page.
+  - Optional alerts (Settings): a pop-up (and a system notification if you allow it) when a drug, medical or booster cooldown ends or your energy is full. Optional sound, including your own short audio file (400 KB at most, stored only in your browser). Uses 2 background requests per minute.
+  - Ranked War extras: warning before the chain expires (you choose 30/60/90 s), warning shortly before an enemy leaves hospital (only for enemies inside your FF range), and a score card (both factions' score, lead, target and time left).
+  - Backup: download your target list, settings and logs as one JSON file and restore them later. Your API keys are never written to the file.
+  - Layout: the side panel can be resized by dragging its left edge, the mini window can be moved by dragging its title (double-click resets), and the panel can stay open after a page reload.
 - **Ranked War mode**
   - Fetches the enemy faction's members, tracks hospital time live, sorts by FF and gives you the next target.
 - **Faction management**
@@ -30,6 +35,19 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
 - **Mini window**
   - Press Attack in the queue and the tool shrinks into a small window in the corner. The attack page opens in the same tab and the mini window shows the next target and an Attack button when you are done.
 
+- **Torn page helpers** (each can be switched off in Settings; the userscript adds small notes to Torn's own pages)
+  - **Sidebar:** Merit Tracker (see below), NPC Loot (time left until Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge reach loot levels 1-5, counted from hospital release; if the release was never seen, an unverified estimate from last action is shown), optional info lines and a collapsible layout.
+  - **Merit Tracker:** shows your merit upgrades, unspent and spent merits, and the honors and medals closest to completion. The award data is collected in the background from the Awards pages, and progress that Torn does not show (flights, finishing hits, defends, criticals, refills, bounties, OC and so on) is calculated from your personal stats through the API. On pages such as Travel, Attack, Gym, Crimes or the Stock Market, a panel under "Links" opens by itself and shows only the awards that relate to that page (on the flight page, every country with the one you picked first).
+  - **Crimes:** logs average $/nerve and success rate for every option (including Hustling, Disposal per method, Forgery steps, Burglary and others) and shows it under the option name; Pickpocketing targets are colored by your logged success rate; the Hustling Gather Audience nerve is counted in the games it supports. The log can be reset per crime. Item rewards are valued at market value.
+  - **Jail:** level, time and FF filters; optional automatic confirmation of the BUST dialog (it spends 5 nerve, so it is off by default).
+  - **Profile:** attack history summary between you and the player, Stake out alerts when life drops below your threshold.
+  - **Stock Market:** under every stock the block cost, payout frequency and daily return, a ranking (#1, #2...) and a top 5 list that marks what you can afford. Item bonuses show the item and its market value. This is data, not advice; share prices move.
+  - **Faction OC:** per-crime average slot success rate, weighted success (role weights from tornprobability.com) and the weakest link.
+  - **Company:** Stock Shipments auto-fill by target days and a "fill the warehouse" button.
+  - **Gym:** ready-made Baldr's Ratio and Hank's Ratio targets.
+  - **Items, loadout, Item Market and Bazaar:** weapon bonus descriptions written next to the bonus icon; Bazaar items show market price and estimated profit after the 5% fee, and cheap listings are highlighted (not for weapons and armor, whose price depends on stats and bonuses). NPC shop Shop Analyzer shows market price and profit.
+- **Notifications:** one Settings section where you choose each alert separately (energy, drug, medical, booster, chain, hospital and more), plus sound and a pre-warning.
+- **Updates:** a patch-notes window opens once for each new version, says where the new option is in Settings and shows skipped versions page by page.
 - **Interface**
   - Opens as a side panel; the Wide/Narrow button is remembered per mode (Faction management opens wide).
   - The home screen shows a status strip with energy, nerve, cooldowns, the target queue and the time left in the running Torn event (read from Torn's own banner), plus a small status on each mode card.
@@ -56,7 +74,7 @@ Updates are picked up automatically by Tampermonkey.
 ## Privacy
 
 - Your API keys, target list and settings are stored only in Tampermonkey's own storage on your computer. The Torn page itself cannot read them.
-- Requests go only to `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk` and `yata.yt`. Your Torn key is sent only to Torn, and your FF Scouter key only to FF Scouter.
+- Requests go only to `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt` and `tornprobability.com` (only the public OC role weights are requested there). Your Torn key is sent only to Torn, and your FF Scouter key only to FF Scouter.
 - There is no server of our own and no analytics.
 
 ## Data sources and limits
@@ -66,6 +84,7 @@ Updates are picked up automatically by Tampermonkey.
 - Other players' real battle stats and cash on hand are not available through the API. FF values and networth are estimates and upper bounds.
 - Some faction, organized crime and cooldown fields were implemented from the public API behaviour and are less tested than the rest. If a section looks empty, open the debug box in the Torn connection section and report the response in an issue.
 - Hit-calling shared between faction members is not possible, because there is no shared server.
+- Merit progress read from personal stats, NPC Loot estimates, stock values for item bonuses and the Crimes averages are estimates built from the public API and what Torn shows on the page. Compare them with the real values before relying on them.
 
 ## Backup
 
@@ -93,6 +112,11 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
   - Halloween event'i sürerken tatlı sayacı, Torn'daki gerçek tatlı sayını ve sepet seviyeni okur.
   - İsteğe bağlı: Halloween sürerken enerjin 25 ve üstündeyse açma düğmesinin yanında Saldır butonu çıkar. Sıradaki hedefin durumunu tazeler, mini pencereye geçer ve saldırı sayfasını açar. Saldırıyı yine Torn'da sen başlatırsın. Varsayılan kapalıdır (dakikada bir arka plan isteği ister), event bitince kendiliğinden kaybolur.
   - İsteğe bağlı: Retal. Script 30 ya da 60 saniyede bir faction üye listeni okur. Bir üyen faction dışından biri tarafından hastaneye düşürülürse ve saldıran Okay durumundaysa açma düğmesinin altında Retal butonu çıkar, tıklayınca saldırı sayfasını açar. Saldıranı gizli olanlar atlanır. Varsayılan kapalıdır (dakikada 2 arka plan isteği). Torn wiki'ye göre retal vuruşu sadece hastaneye düşürme olmalı ve 1.5x çarpan verir; buton 5 dakika sonra kaybolur.
+  - Alışveriş kaydı: yurtdışı mağaza sayfasında bastığın Buy'ları (yalnızca Torn'un "purchased X / 18" sayacı gerçekten artarsa) not eder. Yurtdışı fiyatları ekranı bu uçuş ve son 24 saat için maliyeti ve tahmini kârı gösterir. Kâr, sayfaya başka scriptlerin eklediği profit sütununu değil, fiyat servisindeki Torn piyasa değerini kullanır.
+  - İsteğe bağlı uyarılar (Ayarlar): ilaç, medical ya da booster cooldown'ı bitince ya da enerjin dolunca ekranda kutu (izin verirsen sistem bildirimi). İsteğe bağlı ses, istersen kendi kısa ses dosyan (en fazla 400 KB, yalnızca tarayıcında saklanır). Dakikada 2 arka plan isteği kullanır.
+  - Ranked War eklemeleri: chain bitmeden uyarı (30/60/90 sn seçilir), rakip hastaneden çıkmadan kısa süre önce uyarı (yalnızca FF aralığındaki rakipler için) ve skor kartı (iki faction'ın skoru, fark, hedef ve kalan süre).
+  - Yedekleme: hedef listeni, ayarlarını ve kayıtlarını tek bir JSON dosyası olarak indirip sonra geri yükleyebilirsin. API anahtarların dosyaya hiç yazılmaz.
+  - Yerleşim: yan panelin genişliği sol kenarından sürüklenerek ayarlanır, mini pencere başlığından sürüklenerek taşınır (çift tık sıfırlar), panel sayfa yenilenince açık kalabilir.
 - **Ranked War modu**
   - Rakip faction üyelerini çeker, hastane süresini canlı izler, FF'ye göre sıralar ve sıradaki hedefi verir.
 - **Faction yönetimi**
@@ -107,6 +131,19 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
 - **Mini pencere**
   - Sıradan Saldır'a basınca araç köşede küçük bir pencereye dönüşür. Saldırı sayfası aynı sekmede açılır, saldırı bitince mini pencere sıradaki hedefi ve Saldır düğmesini gösterir.
 
+- **Torn sayfa yardımcıları** (hepsi Ayarlar'dan kapatılabilir; script Torn'un kendi sayfalarına küçük notlar ekler)
+  - **Kenar çubuğu:** Merit Tracker (aşağıda), NPC Loot (Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkıştan itibaren loot seviyesi 1-5'e kalan süre; çıkış zamanı hiç görülmediyse son aktiviteye göre doğrulanmamış bir tahmin gösterilir), isteğe bağlı bilgi satırları ve katlanabilir yerleşim.
+  - **Merit Tracker:** merit upgrade'lerini, boştaki ve harcanan meritlerini ve tamamlamaya en yakın honor ile medalları gösterir. Ödül verisi arka planda Awards sayfalarından toplanır; Torn'un ilerleme göstermediği ödüllerde (uçuş, finishing hit, defend, critical, refill, bounty, OC vb.) ilerleme API'den kişisel istatistiklerinle hesaplanır. Travel, Attack, Gym, Crimes ya da Borsa gibi sayfalara girince "Bağlantılar" altında bir pencere kendiliğinden açılır ve yalnızca o sayfayla ilgili ödülleri gösterir (uçuş sayfasında seçtiğin ülke en üstte olmak üzere tüm ülkeler).
+  - **Crimes:** her seçenek için ortalama $/nerve ve başarı oranını (Hustling, yönteme göre Disposal, Forgery adımları, Burglary ve diğerleri dahil) kaydedip seçenek adının altında gösterir; Pickpocketing hedefleri kayıtlı başarı oranına göre renklenir; Hustling'in Gather Audience nerve'i desteklediği oyunlara dahil edilir. Kayıt her suç için sıfırlanabilir. Eşya ödülleri piyasa değeriyle hesaplanır.
+  - **Hapishane:** seviye, süre ve FF filtresi; BUST onay kutusunu otomatik onaylama seçeneği (5 nerve harcar, bu yüzden varsayılan kapalı).
+  - **Profil:** seninle o oyuncu arasındaki saldırı geçmişi özeti, can yüzdesi eşiğin altına inince Stake out uyarısı.
+  - **Borsa:** her hissenin altında blok maliyeti, ödeme sıklığı ve günlük getiri, sıralama (#1, #2...) ve parana yetenleri işaretleyen ilk 5 listesi. Eşya bonuslarında eşya ve piyasa değeri yazılır. Bu veridir, tavsiye değildir; hisse fiyatları değişir.
+  - **Faction OC:** her suç için ortalama slot başarısı, ağırlıklı başarı (rol ağırlıkları tornprobability.com'dan) ve en zayıf halka.
+  - **Şirket:** hedef gün sayısına göre otomatik Stock Shipments doldurma ve "Depoyu doldur" düğmesi.
+  - **Gym:** hazır Baldr's Ratio ve Hank's Ratio hedefleri.
+  - **Eşyalar, loadout, Item Market ve Bazaar:** silah bonus açıklamaları bonus ikonunun yanında yazılır; Bazaar eşyalarında piyasa fiyatı ve %5 kesintiden sonra tahmini kâr görünür, ucuz ilanlar vurgulanır (fiyatı stat ve bonusa bağlı olan silah ve zırhlarda yapılmaz). NPC mağazalarında Shop Analyzer piyasa fiyatını ve kârı gösterir.
+- **Bildirimler:** her uyarıyı ayrı seçtiğin tek bir Ayarlar bölümü (enerji, ilaç, tıbbi, booster, chain, hastane vb.), ayrıca ses ve ön uyarı.
+- **Güncellemeler:** her yeni sürümde bir kez açılan güncelleme notu penceresi; yeni ayarın Ayarlar'da nerede olduğunu yazar, atlanan sürümleri sayfa sayfa gösterir.
 - **Arayüz**
   - Yan panel olarak açılır, Geniş/Dar düğmesi her mod için hatırlanır (Faction yönetimi geniş açılır).
   - Ana ekranda enerji, nerve, cooldown, hedef kuyruğu ve süren Torn event'inin kalan süresini (Torn'un kendi banner'ından okunur) gösteren bir durum şeridi ve her mod kartında küçük bir durum bilgisi var.
@@ -133,7 +170,7 @@ Güncellemeleri Tampermonkey kendiliğinden alır.
 ## Gizlilik
 
 - API anahtarların, hedef listen ve ayarların yalnızca bilgisayarındaki Tampermonkey'in kendi deposunda saklanır. Torn sayfasının kendisi bunları okuyamaz.
-- İstekler yalnızca `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk` ve `yata.yt` adreslerine gider. Torn anahtarın yalnızca Torn'a, FF Scouter anahtarın yalnızca FF Scouter'a gönderilir.
+- İstekler yalnızca `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt` ve `tornprobability.com` (burada yalnızca herkese açık OC rol ağırlıkları istenir) adreslerine gider. Torn anahtarın yalnızca Torn'a, FF Scouter anahtarın yalnızca FF Scouter'a gönderilir.
 - Kendi sunucumuz ve analiz aracı yoktur.
 
 ## Veri kaynakları ve sınırlar
@@ -143,6 +180,7 @@ Güncellemeleri Tampermonkey kendiliğinden alır.
 - Diğer oyuncuların gerçek battle stat'ı ve cebindeki nakit API'den alınamaz. FF değerleri ve networth tahmin ve üst sınırdır.
 - Bazı faction, organized crime ve cooldown alanları herkese açık API davranışına göre yazıldı ve diğer bölümlerden daha az test edildi. Bir bölüm boş görünürse Torn bağlantısı bölümündeki hata ayıklama kutusunu açıp yanıtı bir issue'da bildir.
 - Faction üyeleri arasında ortak hit-call yapılamaz, çünkü ortak bir sunucu yoktur.
+- Kişisel istatistiklerden okunan merit ilerlemesi, NPC Loot tahminleri, eşya bonuslu hisselerin değerleri ve Crimes ortalamaları, herkese açık API'den ve Torn'un sayfada gösterdiğinden üretilmiş tahminlerdir. Güvenmeden önce gerçek değerlerle karşılaştır.
 
 ## Yedek
 
