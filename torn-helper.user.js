@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.64
+// @version      1.6.66
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -137,6 +137,7 @@
   var THOST = {
     ui: ui, save: saveUi, onchange: null, setState: setState,
     applyUi: function () { applyUi(); },
+    statKeys: function () { var t = gmGet('merit-trv', null), o = []; if (!t || !t.d) return 'stats: none'; Object.keys(t.d).forEach(function (k) { if (/trav|abroad|import|mex|chi|swi|dub|sou|arg|haw|jap|lon|cay|can/.test(k)) o.push(k + '=' + t.d[k]); }); return 'stats(' + Object.keys(t.d).length + '): ' + o.slice(0, 60).join(', '); },
     healthGet: function () { return { fails: gmGet('health', {}) || {}, errs: gmGet('health-err', []) || [] }; },
     updateCached: function () { return GM_getValue('upd-chk', null); },
     checkUpdate: function () {
@@ -2216,7 +2217,7 @@
     function healthShow() { var t = healthText(), el = $('health-msg'); if (el) el.textContent = t.length ? (lang === 'en' ? 'Possible problems: ' : 'Olası sorunlar: ') + t.join(' | ') : (lang === 'en' ? 'No problem detected.' : 'Sorun görünmüyor.'); }
     $('health-copy').addEventListener('click', function () {
       var t = healthText();
-      copyText('Torn-Helper v' + APP_VERSION + '\n' + (t.length ? t.join('\n') : 'No problem detected') + '\n' + 'Browser: ' + (navigator.userAgent || '')).then(function (ok) { $('health-msg').textContent = ok ? (lang === 'en' ? 'Report copied. Send it to the developer.' : 'Rapor kopyalandı. Geliştiriciye gönder.') : (lang === 'en' ? 'Could not copy.' : 'Kopyalanamadı.'); });
+      copyText('Torn-Helper v' + APP_VERSION + '\n' + (t.length ? t.join('\n') : 'No problem detected') + '\n' + (function () { try { return THOST.statKeys(); } catch (e) { return ''; } })() + '\n' + 'Browser: ' + (navigator.userAgent || '')).then(function (ok) { $('health-msg').textContent = ok ? (lang === 'en' ? 'Report copied. Send it to the developer.' : 'Rapor kopyalandı. Geliştiriciye gönder.') : (lang === 'en' ? 'Could not copy.' : 'Kopyalanamadı.'); });
     });
     setInterval(function () { if ($('home-settings').open) healthShow(); }, 3000);
     function fill() { vc.textContent = (lang === 'en' ? 'Version: v' : 'Sürüm: v') + APP_VERSION; }
@@ -3001,7 +3002,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.64', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.66', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4903,6 +4904,7 @@
     [/finishing hits? with machine/i, /machine.*hit|hit.*machine/], [/finishing hits? with heavy/i, /heavy.*hit|hit.*heavy|artillery/], [/finishing hits? with temporary/i, /temp.*hit|hit.*temp|temporary/],
     [/critical hits/i, /critical/], [/successfully defend against|win [\d,]+ defends/i, /defendswon$|defends\.won$|defends\.won\./], [/win [\d,]+ attacks?/i, /attackswon$|attacks\.won$/],
     [/rounds/i, /roundsfired|rounds.*fired|fired.*rounds/], [/refill your energy/i, /energyrefill|refills?\.energy|^refills$/], [/refill your nerve/i, /nerverefill|refills?\.nerve/], [/travel abroad|travel [\d,]+ times|trips/i, /traveltimes|travel.*(times|total)$/],
+    [/import [\d,]+ items? from abroad/i, /itemsboughtabroad|itemsabroad|boughtabroad/],
     [/collect [\d,]+ bount/i, /bountiescollected|bount.*collected/], [/organi[sz]ed crimes/i, /organi[sz]edcrimes|organi[sz]ed.*crimes/], [/revive/i, /revives/],
     [/gain [\d,]+ strength/i, /(^|\.)strength$/], [/gain [\d,]+ speed/i, /(^|\.)speed$/], [/gain [\d,]+ dexterity/i, /(^|\.)dexterity$/], [/gain [\d,]+ defense/i, /(^|\.)defense$/], [/total stats/i, /totalstats|(^|\.)total$/],
     [/mug/i, /moneymugged|mugged/], [/stalemate|draw/i, /draw/]
@@ -4938,7 +4940,7 @@
     if (v[1] || v[0] > 0) return v;
     var t = gmGet('merit-trv', null); if (!t || !t.d) return v;
     var ds = v[2] || '', n = 0, c = null, m = /Travel to (.+?) ([\d,]+) times/i.exec(ds);
-    if (m) { var st = MT_STAT[m[1].trim()], tv = st ? mtFind(t.d, new RegExp(st + '$')) : null; if (tv != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(tv); } }
+    if (m) { var st = MT_STAT[m[1].trim()], tv = st ? mtFind(t.d, new RegExp(st + '$')) : null; if (tv == null) { var cn = m[1].trim().toLowerCase().replace(/[^a-z]/g, ''); tv = mtFind(t.d, new RegExp(cn + '.*trav|trav.*' + cn + '|^' + cn.slice(0, 3) + 'trav|\.' + cn.slice(0, 3) + 'trav')); } if (tv != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(tv); } }
     else {
       var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
       for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) { var fv = mtFind(t.d, MT_RULES[i][1]); if (fv != null) { c = Number(fv); n = parseFloat(nm[1].replace(/,/g, '')); } }
@@ -5783,7 +5785,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.64';
+  var TH_VER = '1.6.66';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5869,7 +5871,8 @@
     ['1.6.61', 'o', ['Telefon (Torn PDA) görünümü: küçük ekranda Saldır penceresi, Uçuş önerileri ve Torn-Helper düğmesi daha az yer kaplıyor (küçük yazı, sıkı satırlar, kaydırılabilir kısa pencere).'], ['Phone (Torn PDA) layout: on small screens the Attack panel, Flight tips and the Torn-Helper button take less space (smaller text, tighter rows, a shorter scrollable panel).']],
     ['1.6.62', 'o', ['Telefonda Saldır penceresi çok daha minimal: yalnızca enerji, hedef adı/durumu, Saldır ve Atla görünüyor.'], ['On phones the Attack panel is much more minimal: only energy, target name/status, Attack and Skip are shown.']],
     ['1.6.63', 'o', ['Hisse senetleri: Buy ve Sell kutularının üstüne "$ miktar" alanı eklendi; para yazınca (5m, 250k gibi kısaltmalar da olur) hisse adedi otomatik hesaplanıp Torn kutusuna yazılıyor. Ayarlardan kapatılabilir.'], ['Stock market: a "$ amount" field above the Buy and Sell boxes; type money (shorthands like 5m, 250k work) and the share count is calculated and filled into Torn box automatically. Can be turned off in settings.']],
-    ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']]
+    ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']],
+    ['1.6.66', 'n', ['Merit Tracker: İsviçre, Çin, Meksika gibi ülkelerin "Travel to" honorları için daha esnek istatistik eşleştirmesi; "Import N items from abroad" honorlarına ilerleme eklendi.'], ['Merit Tracker: more flexible stat matching for "Travel to" honors (Switzerland, China, Mexico...), and "Import N items from abroad" honors get progress.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
