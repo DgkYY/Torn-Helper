@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.91
+// @version      1.6.92
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -139,7 +139,7 @@
   var THOST = {
     ui: ui, save: saveUi, onchange: null, setState: setState,
     applyUi: function () { applyUi(); },
-    ldoExport: function () { var db = gmGet('ldo', {}) || {}, rec = Object.keys(db).map(function (k) { var r = db[k]; return { id: Number(k), name: r.n || '', t: r.t, level: r.lvl || null, chain: r.ch || null, result: r.res || null, respect: r.resp == null ? null : r.resp, w: r.w || {}, a: r.a || [] }; }).sort(function (x, y) { return y.t - x.t; }); return JSON.stringify({ schema: 1, app: 'Torn-Helper', exported: new Date().toISOString(), records: rec }, null, 1); },
+    ldoExport: function () { var db = gmGet('ldo', {}) || {}, rec = Object.keys(db).map(function (k) { var r = db[k]; return { id: Number(k), name: r.n || '', t: r.t, level: r.lvl || null, chain: r.ch || null, result: r.res || null, respect: r.resp == null ? null : r.resp, ffr: (typeof ldoFfr === 'function' ? ldoFfr(r) : null), ffe: r.ffe == null ? null : r.ffe, w: r.w || {}, a: r.a || [] }; }).sort(function (x, y) { return y.t - x.t; }); return JSON.stringify({ schema: 1, app: 'Torn-Helper', exported: new Date().toISOString(), records: rec }, null, 1); },
     ldoCount: function () { return Object.keys(gmGet('ldo', {}) || {}).length; },
     ldoClear: function () { gmSet('ldo', {}); },
     shrGet: function () { return gmGet('shr-ok', null); },
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.91', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.92', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5305,6 +5305,12 @@
     if (m < 2880) return T(Math.round(m / 60) + ' saat önce', Math.round(m / 60) + ' h ago');
     return T(Math.round(m / 1440) + ' gün önce', Math.round(m / 1440) + ' days ago');
   }
+  /* FF tahmini: respect = taban(seviye) x zincir x FF  =>  FF = respect / (taban x zincir). Sonuc carpani (mug vb.) bilinmiyor, bu yuzden "ham" deger; FF Scouter ile karsilastirilip carpan cikarilabilir. */
+  function ldoFfr(r) {
+    if (!r || !(r.resp > 0) || !(r.lvl > 0) || r.ch == null) return null;
+    var base = Math.floor((r.lvl / 200 + 1) * 100) / 100, cs = r.ch >= 11 ? 0.25 * Math.log(r.ch) / Math.LN10 + 0.75 : 1;
+    var v = r.resp / (base * cs); return isFinite(v) ? Math.round(v * 100) / 100 : null;
+  }
   var ldoLvBusy = false;
   function ldoTick() {
     var old = document.getElementById('th-ldo');
@@ -5326,6 +5332,7 @@
       var sig = JSON.stringify([cur.w, cur.a, res, resp]), rec = db[id];
       if (!rec || rec.s !== sig || Date.now() - rec.t > 600000) {
         db[id] = { n: dn, t: Date.now(), s: sig, w: cur.w, a: cur.a, ch: ch, lvl: rec && rec.lvl, lt: rec && rec.lt };
+        var fc0 = (gmGet('bn-ff', {}) || {})[id]; db[id].ffe = fc0 && fc0.ff != null ? fc0.ff : (rec && rec.ffe != null ? rec.ffe : null);
         if (res) { db[id].res = res; db[id].resp = resp; }
         var ks = Object.keys(db); if (ks.length > 300) { ks.sort(function (x, y) { return db[x].t - db[y].t; }); ks.slice(0, ks.length - 300).forEach(function (k) { delete db[k]; }); }
         gmSet('ldo', db);
@@ -6003,7 +6010,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.91';
+  var TH_VER = '1.6.92';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6104,6 +6111,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.92', 'n', ['Teçhizat kayıtlarına arka planda FF verisi (hesaplanan ve FF Scouter) kaydediliyor; ekranda gösterilmiyor, JSON dışa aktarımında var.'], ['Loadout records now silently store FF data (computed and FF Scouter); not shown on screen, included in the JSON export.']],
     ['1.6.91', 'n', ['Ortak paylaşım: sunucunun hata nedeni durum satırında gösteriliyor.'], ['Shared data: the server error reason is shown in the status line.']],
     ['1.6.90', 'n', ['Ortak paylaşım: ayarlarda kayıt/yükleme durumu satırı eklendi.'], ['Shared data: added a record/upload status line in settings.']],
     ['1.6.89', 'n', ['Ortak sunucu adresi yeni alt alan adına taşındı.'], ['Shared server address moved to the new subdomain.']],
