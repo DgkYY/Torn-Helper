@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.82
+// @version      1.6.83
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3019,7 +3019,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.82', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.83', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4304,27 +4304,20 @@
     var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
     gybLoad();
     var mu = enrMult(), sig = mu.m + '|' + mu.by.join(',');
-    var els = root.querySelectorAll('li, tr');
+    var els = root.querySelectorAll('li[data-item]');
     for (var i = 0; i < els.length; i++) {
-      var li = els[i], tx = li.textContent || '';
-      if (tx.length > 300 || tx.indexOf('Can of') < 0) continue;
-      if (li.querySelector('li')) continue;
-      var nm = /Can of ([A-Za-z\- ]+?)(?: x(\d+))?(?:\s{2,}|$|\s*[\n\r]|\s+[A-Z][a-z]+:)/.exec(tx.replace(/\s+/g, ' ').trim());
-      var key = nm ? nm[1].toLowerCase().trim() : '', base = ENR[key];
-      if (!base) { for (var k in ENR) if (tx.toLowerCase().indexOf('can of ' + k) >= 0) { base = ENR[k]; key = k; nm = nm || [0, k, '']; break; } }
+      var li = els[i], nmEl = li.querySelector('.name-wrap .name') || li.querySelector('.name');
+      var key = nmEl ? (nmEl.textContent || '').replace(/^\s*Can of\s+/i, '').trim().toLowerCase() : '', base = ENR[key];
       var ex = li.querySelector('.th-enr');
       if (!base) { if (ex) ex.remove(); continue; }
-      var q = Number((/ x(\d+)(?!\d)/.exec(tx.replace(/\s+/g, ' ')) || [0, 1])[1]) || 1;
+      var q = Number(li.getAttribute('data-qty')) || 1;
       var tot = Math.round(base * mu.m * 100) / 100;
       var txt = '⚡ ' + base + (mu.m !== 1 ? ' → ' + tot : '') + ' E' + (q > 1 ? ' (×' + q + ' = ' + Math.round(tot * q * 100) / 100 + ')' : '') + (mu.by.length ? ' [' + mu.by.join(', ') + ']' : (mu.ok ? '' : ' …'));
       if (ex && ex.getAttribute('data-s') === txt) continue;
       if (!ex) {
         ex = document.createElement('span'); ex.className = 'th-enr';
         ex.style.cssText = 'margin-left:10px;color:#fbbf24;font-size:11px;font-weight:700;white-space:nowrap;pointer-events:none;';
-        var nameEl = null, all = li.querySelectorAll('*');
-        for (var j = 0; j < all.length; j++) { if (!all[j].children.length && /Can of/.test(all[j].textContent) && !all[j].closest('.th-enr')) { nameEl = all[j]; break; } }
-        (nameEl && nameEl.parentNode ? nameEl.parentNode : li).appendChild(ex);
-        if (nameEl && nameEl.parentNode) nameEl.parentNode.insertBefore(ex, nameEl.nextSibling);
+        nmEl.parentNode.insertBefore(ex, nmEl.nextSibling);
       }
       ex.setAttribute('data-s', txt); ex.textContent = txt;
     }
@@ -6051,7 +6044,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.82';
+  var TH_VER = '1.6.83';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6152,7 +6145,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
-    ['1.6.82', 'o', ['Eşya sayfası: enerji içeceklerinin yanında taban E ve fraksiyon/kitap/diğer bonuslarla gerçek E miktarı gösteriliyor (adet varsa toplam).'], ['Items page: energy drinks now show base E and the real E with faction/book/other bonuses (total when you own several).']],
+    ['1.6.83', 'o', ['Eşya sayfası: enerji içeceklerinin yanında taban E ve fraksiyon/kitap/diğer bonuslarla gerçek E miktarı gösteriliyor (adet varsa toplam). Gerçek sayfa yapısına göre düzeltildi.'], ['Items page: energy drinks now show base E and the real E with faction/book/other bonuses (total when you own several).']],
     ['1.6.81', 'o', ['Ortak teçhizat sunucusu: API anahtarı kayıtlıysa bir kez onay sorulur. Onaylarsan kendi teçhizat kayıtların paylaşılır ve saldırı sayfasında başkalarının gördüğü teçhizat gösterilir. API anahtarın ve kimliğin gönderilmez.'], ['Shared loadout server: if an API key is saved you are asked once. If you agree, your loadout records are shared and the attack page shows loadouts seen by other users. Your API key and identity are not sent.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
