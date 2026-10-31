@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.67
+// @version      1.6.68
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3002,7 +3002,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.67', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.68', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4945,6 +4945,13 @@
       var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
       for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) { var fv = mtFind(t.d, MT_RULES[i][1]); if (fv != null) { c = Number(fv); n = parseFloat(nm[1].replace(/,/g, '')); } }
     }
+    if (c == null) {
+      var nm2 = /([\d,]*\d)/.exec(ds);
+      if (nm2) {
+        n = parseFloat(nm2[1].replace(/,/g, '')); var norm = ds.replace(/[\d,]*\d/, '#'), aw2 = gmGet('merit-aw', null), dd = aw2 && aw2.d || {};
+        for (var kk in dd) { var vv = dd[kk]; if (vv && vv[1] && String(vv[2] || '').replace(/[\d,]*\d/, '#') === norm) { var pm = /^\s*([\d,]+)\s*\//.exec(String(vv[1])); if (pm) { c = parseFloat(pm[1].replace(/,/g, '')); break; } } }
+      }
+    }
     if (c == null || !(n > 0)) return v;
     if (c >= n) return [100, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US') + ' ✓', v[2], v[3]];
     return [Math.round(c / n * 1000) / 10, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US'), v[2], v[3]];
@@ -5008,7 +5015,7 @@
     var al = Object.keys(aw.d).map(function (k) { return [k, aw.d[k]]; }).filter(function (x) {
       var t = x[0] + ' ' + x[1][2]; if (x[1][0] >= 100 || !ctx[2].test(t)) return false;
       return true;
-    }).map(function (x) { return [x[0], mtEnr(x[1])]; }).sort(function (a, b) { var ma = ctx[0] === 'travel' && mtCountry && (a[0] + ' ' + a[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0, mb = ctx[0] === 'travel' && mtCountry && (b[0] + ' ' + b[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0; return (mb - ma) || (b[1][0] - a[1][0]); }).slice(0, ctx[0] === 'travel' ? 14 : 6);
+    }).map(function (x) { return [x[0], mtEnr(x[1])]; }).filter(function (x) { return x[1][0] < 100; }).sort(function (a, b) { var ma = ctx[0] === 'travel' && mtCountry && (a[0] + ' ' + a[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0, mb = ctx[0] === 'travel' && mtCountry && (b[0] + ' ' + b[1][2]).indexOf(mtCountry) >= 0 ? 1 : 0; return (mb - ma) || (b[1][0] - a[1][0]); }).slice(0, ctx[0] === 'travel' ? 14 : 6);
     if (old) old.remove();
     var awc = gmGet('merit-aw', null);
     if (!al.length && awc && awc.full) return;
@@ -5786,7 +5793,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.67';
+  var TH_VER = '1.6.68';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5874,7 +5881,8 @@
     ['1.6.63', 'o', ['Hisse senetleri: Buy ve Sell kutularının üstüne "$ miktar" alanı eklendi; para yazınca (5m, 250k gibi kısaltmalar da olur) hisse adedi otomatik hesaplanıp Torn kutusuna yazılıyor. Ayarlardan kapatılabilir.'], ['Stock market: a "$ amount" field above the Buy and Sell boxes; type money (shorthands like 5m, 250k work) and the share count is calculated and filled into Torn box automatically. Can be turned off in settings.']],
     ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']],
     ['1.6.66', 'n', ['Merit Tracker: İsviçre, Çin, Meksika gibi ülkelerin "Travel to" honorları için daha esnek istatistik eşleştirmesi; "Import N items from abroad" honorlarına ilerleme eklendi.'], ['Merit Tracker: more flexible stat matching for "Travel to" honors (Switzerland, China, Mexico...), and "Import N items from abroad" honors get progress.']],
-    ['1.6.67', 'n', ['Merit Tracker: hedef sayıya ulaşılmış honorlar (ör. Mule, Smuggler, Travel to ...) artık "—" yerine %100 ve ✓ ile gösteriliyor.'], ['Merit Tracker: awards whose target is already reached now show 100% with a check mark instead of a dash.']]
+    ['1.6.67', 'n', ['Merit Tracker: hedef sayıya ulaşılmış honorlar (ör. Mule, Smuggler, Travel to ...) artık "—" yerine %100 ve ✓ ile gösteriliyor.'], ['Merit Tracker: awards whose target is already reached now show 100% with a check mark instead of a dash.']],
+    ['1.6.68', 'o', ['Merit Tracker: tamamlanmış (%100) honor ve medaller sayfa panellerinden kaldırıldı. Aynı türden başka kademenin ilerlemesi biliniyorsa (ör. Import 10,000 eşya) küçük kademeler (Mule, Smuggler) için de bundan yararlanılıyor.'], ['Merit Tracker: completed (100%) honors and medals are removed from the page panels. When another tier of the same award has known progress (e.g. Import 10,000 items), it is also used for the lower tiers (Mule, Smuggler).']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
