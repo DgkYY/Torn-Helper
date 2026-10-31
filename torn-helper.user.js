@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @author       DgkYY
-// @version      1.6.73
+// @author       YinYang
+// @version      1.6.74
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3003,7 +3003,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.73', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.74', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5045,10 +5045,12 @@
         var o = b[k]; if (!o || typeof o !== 'object') return;
         var v = Number(o.value), md = Number(o.modifier), mo = Number(o.modified);
         if (!isFinite(v)) return;
-        var pc = isFinite(md) ? (Math.abs(md) <= 3 && !(mo && Math.abs(mo / v - 1 - md) > 0.01 && Math.abs(mo / v - 1 - md / 100) < 0.01) ? md * 100 : md) : null;
+        var pc = isFinite(md) ? md : null;
         if (isFinite(mo) && v) pc = Math.round((mo / v - 1) * 1000) / 10;
         out[k.charAt(0).toUpperCase() + k.slice(1)] = [v, pc == null ? 0 : pc, isFinite(mo) ? mo : null];
       });
+      var oks = Object.keys(out), frac = oks.length === 4 && oks.every(function (kk) { return out[kk][2] == null && Math.abs(out[kk][1]) <= 3; }) && oks.some(function (kk) { return out[kk][1] % 1 !== 0; });
+      if (frac) oks.forEach(function (kk) { out[kk][1] = Math.round(out[kk][1] * 1000) / 10; });
       if (Object.keys(out).length === 4) bseApiD = out; else if (!bseLog) { bseLog = true; try { console.log('[torn-helper] bse api', JSON.stringify(j).slice(0, 300)); } catch (e) {} }
     } catch (e) { if (!bseLog) { bseLog = true; try { console.log('[torn-helper] bse api error', e && e.message); } catch (e2) {} } }
     bseBusy = false;
@@ -5076,6 +5078,9 @@
       if (isFinite(base)) got[m[1]] = [base, pc, null];
     }
     var useApi = !!bseApiD, src = useApi ? bseApiD : got;
+    if (useApi && Object.keys(got).length === 4 && order.some(function (k) { return got[k][1] !== 0; })) {
+      src = {}; order.forEach(function (k) { src[k] = [bseApiD[k][0], got[k][1], null]; });
+    }
     if (Object.keys(src).length < 4) return;
     var sig = order.map(function (k) { return src[k].join(':'); }).join('|') + (lang0() || '') + (useApi ? 'a' : 'd');
     if (old && sig === bseSig && old.previousElementSibling === box) return;
@@ -5820,7 +5825,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.73';
+  var TH_VER = '1.6.74';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5914,7 +5919,8 @@
     ['1.6.70', 'n', ['Merit Tracker: "Travel to the United Arab Emirates" gibi "the" ile başlayan ülke adları artık eşleşiyor; "Defeat 100 people while abroad" honoru yurtdışı galibiyet sayacına bağlandı.'], ['Merit Tracker: country names starting with "the" (e.g. the United Arab Emirates) now match, and "Defeat 100 people while abroad" uses the abroad-wins counter.']],
     ['1.6.71', 'n', ['Kod temizliği: kullanılmayan değişkenler silindi, genel denetim yapıldı.'], ['Code cleanup: unused variables removed after a full review.']],
     ['1.6.72', 'o', ['Yurtdışı mağaza sayfasında her ürünün altına Torn piyasa değeri ve birim başına kâr yazılıyor (ortalama piyasa değerine göre). Ayarlardan kapatılabilir.'], ['Abroad shop page: each item now shows the Torn market value and the profit per unit (based on average market value). Can be turned off in settings.']],
-    ['1.6.73', 'n', ['Tampermonkey betik bilgisine geliştirici adı eklendi.'], ['Developer name added to the Tampermonkey script info.']]
+    ['1.6.73', 'n', ['Tampermonkey betik bilgisine geliştirici adı eklendi.'], ['Developer name added to the Tampermonkey script info.']],
+    ['1.6.74', 'o', ['Efektif Battle Stats: eksi modifier (ör. Defense -%3) yanlış okunuyordu (-%300 gösteriyordu); sayfadaki yüzde değerleri artık doğrudan kullanılıyor.'], ['Effective Battle Stats: negative modifiers (e.g. Defense -3%) were misread (shown as -300%); the percentages shown on the page are now used directly.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
