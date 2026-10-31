@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.88
+// @version      1.6.89
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -22,7 +22,7 @@
 // @connect      api.prombot.co.uk
 // @connect      yata.yt
 // @connect      tornprobability.com
-// @connect      torn-helper-server.dogukankasap.workers.dev
+// @connect      torn-helper-server.th-helper.workers.dev
 // ==/UserScript==
 
 /* Torn PDA / eksik GM_ yedekleri: Tampermonkey zaten tanimliyorsa dokunmaz */
@@ -3023,7 +3023,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.88', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.89', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5358,7 +5358,7 @@
   }
   setInterval(ldoTick, 1500);
   /* Ortak sunucu (varsayilan kapali): kendi kayitlarini gonder, baskalarinin gordugu teçhizati goster */
-  var SRV = 'https://torn-helper-server.dogukankasap.workers.dev', shrBusy = false, shrQ = {};
+  var SRV = 'https://torn-helper-server.th-helper.workers.dev', shrBusy = false, shrQ = {};
   function srvReq(method, path, body) {
     return new Promise(function (res, rej) {
       try {
@@ -6001,7 +6001,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.88';
+  var TH_VER = '1.6.89';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6102,6 +6102,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.89', 'n', ['Ortak sunucu adresi yeni alt alan adına taşındı.'], ['Shared server address moved to the new subdomain.']],
     ['1.6.88', 'o', ['Gym: Torn kurallarına uyum için gym panellerini otomatik açıp kapatan tarama kaldırıldı. Gym bilgileri artık resmi API verisinden (torn/gyms) alınıyor; açtığın gym de kaydedilmeye devam ediyor.'], ['Gym: removed the automatic opening/closing of gym panels (Torn rules). Gym data now comes from the official API (torn/gyms); gyms you open yourself are still recorded.']],
     ['1.6.87', 'o', ['Merit: ödül listesi artık resmi API verisinden (torn/honors, torn/medals, user/honors, user/medals) alınıyor; ilerleme istatistiklerden hesaplanıyor. Sayfa taraması gerekmiyor.'], ['Merit: awards list now comes from the official API (torn/honors, torn/medals, user/honors, user/medals); progress is computed from stats. No page scan needed.']],
     ['1.6.86', 'o', ['Torn kurallarına uyum: Awards için gizli sayfa açıp otomatik gezme kaldırıldı. Artık yalnızca sen Awards sayfasını açınca, ekranda görünenler kaydediliyor. Teçhizat kaydı da sadece sekme görünürken alınıyor.'], ['Torn rules compliance: removed the hidden-page auto scan for Awards. Now only what is shown while you have the Awards page open is recorded. Loadout capture also only runs while the tab is visible.']],
