@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.66
+// @version      1.6.67
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3002,7 +3002,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.66', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.67', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4945,10 +4945,11 @@
       var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
       for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) { var fv = mtFind(t.d, MT_RULES[i][1]); if (fv != null) { c = Number(fv); n = parseFloat(nm[1].replace(/,/g, '')); } }
     }
-    if (c == null || !(n > 0) || c >= n) return v;
+    if (c == null || !(n > 0)) return v;
+    if (c >= n) return [100, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US') + ' ✓', v[2], v[3]];
     return [Math.round(c / n * 1000) / 10, c.toLocaleString('en-US') + ' / ' + n.toLocaleString('en-US'), v[2], v[3]];
   }
-  function mtPct(p) { return p >= 99.95 ? '99.9' : (p >= 10 ? String(Math.floor(p)) : String(Math.round(p * 10) / 10)); }
+  function mtPct(p) { return p >= 100 ? '100' : p >= 99.95 ? '99.9' : (p >= 10 ? String(Math.floor(p)) : String(Math.round(p * 10) / 10)); }
   function mtPins() { var p = gmGet('merit-pins', []); return Array.isArray(p) ? p : []; }
   function mtPinStar(nm) { var on = mtPins().indexOf(nm) >= 0; return '<span data-pin="' + encodeURIComponent(nm) + '" title="' + T('Üstte sabitle', 'Pin on top') + '" style="cursor:pointer;color:#fbbf24;margin-right:3px;">' + (on ? '★' : '☆') + '</span>'; }
   function mtPinToggle(ev) {
@@ -5785,7 +5786,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.66';
+  var TH_VER = '1.6.67';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5872,7 +5873,8 @@
     ['1.6.62', 'o', ['Telefonda Saldır penceresi çok daha minimal: yalnızca enerji, hedef adı/durumu, Saldır ve Atla görünüyor.'], ['On phones the Attack panel is much more minimal: only energy, target name/status, Attack and Skip are shown.']],
     ['1.6.63', 'o', ['Hisse senetleri: Buy ve Sell kutularının üstüne "$ miktar" alanı eklendi; para yazınca (5m, 250k gibi kısaltmalar da olur) hisse adedi otomatik hesaplanıp Torn kutusuna yazılıyor. Ayarlardan kapatılabilir.'], ['Stock market: a "$ amount" field above the Buy and Sell boxes; type money (shorthands like 5m, 250k work) and the share count is calculated and filled into Torn box automatically. Can be turned off in settings.']],
     ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']],
-    ['1.6.66', 'n', ['Merit Tracker: İsviçre, Çin, Meksika gibi ülkelerin "Travel to" honorları için daha esnek istatistik eşleştirmesi; "Import N items from abroad" honorlarına ilerleme eklendi.'], ['Merit Tracker: more flexible stat matching for "Travel to" honors (Switzerland, China, Mexico...), and "Import N items from abroad" honors get progress.']]
+    ['1.6.66', 'n', ['Merit Tracker: İsviçre, Çin, Meksika gibi ülkelerin "Travel to" honorları için daha esnek istatistik eşleştirmesi; "Import N items from abroad" honorlarına ilerleme eklendi.'], ['Merit Tracker: more flexible stat matching for "Travel to" honors (Switzerland, China, Mexico...), and "Import N items from abroad" honors get progress.']],
+    ['1.6.67', 'n', ['Merit Tracker: hedef sayıya ulaşılmış honorlar (ör. Mule, Smuggler, Travel to ...) artık "—" yerine %100 ve ✓ ile gösteriliyor.'], ['Merit Tracker: awards whose target is already reached now show 100% with a check mark instead of a dash.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
