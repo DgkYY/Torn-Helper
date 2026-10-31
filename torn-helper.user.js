@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.84
+// @version      1.6.87
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3023,7 +3023,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.84', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.87', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5309,6 +5309,7 @@
     var old = document.getElementById('th-ldo');
     var mm = /sid=attack/i.test(location.search) && /user2ID=(\d+)/i.exec(location.search);
     if (!ui.ldo || !mm) { if (old) old.remove(); return; }
+    if (document.hidden) return;
     var pl = document.querySelectorAll('[class*="player___"]'); if (pl.length < 2) return;
     var id = mm[1], d = pl[1], cur = ldoRead(d), has = Object.keys(cur.w).length > 0, db = gmGet('ldo', {}) || {};
     if (has) {
@@ -5675,59 +5676,42 @@
   function mtSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function mtStat(msg) { gmSet('merit-aw-st', { at: Date.now(), m: msg }); var el = document.getElementById('th-mtst'); if (el) el.textContent = msg; }
   function mtRefresh() { var o = document.getElementById('th-mtp'), l = document.getElementById('th-mt'); if (o && l) { o.remove(); mtOpen(l); } }
-  async function mtCycle(d) {
-    var tabs = ['honors', 'medals'], first = d.querySelector('li[role="tab"][class*="selectedTab"]');
-    for (var t = 0; t < tabs.length; t++) {
-      var tb = d.querySelector('li#' + tabs[t] + '[role="tab"]'); if (tb) { tb.click(); await mtSleep(900); }
-      var pnl = d.getElementById(tabs[t] + '-panel') || d, cats = pnl.querySelectorAll('li[class*="category___"]');
-      mtAwScrape(d);
-      for (var k = 0; k < cats.length; k++) { cats[k].click(); await mtSleep(700); mtAwScrape(d); mtStat(T('Taranıyor: ', 'Scanning: ') + tabs[t] + ' ' + (k + 1) + '/' + cats.length); }
-    }
-    /* Awards sayfasındaki arama kutusunu da kullan: aramada tüm ödüllerin ilerlemesi görünüyor */
-    for (var t2 = 0; t2 < tabs.length; t2++) {
-      try {
-        var tb2 = d.querySelector('li#' + tabs[t2] + '[role="tab"]'); if (tb2) { tb2.click(); await mtSleep(700); }
-        var sb = d.querySelector('button[aria-label="Search on ' + tabs[t2] + ' tab"]'); if (sb) { sb.click(); await mtSleep(500); }
-        var inp = d.querySelector('input[type="text"], input[type="search"], input:not([type])'), W = d.defaultView || window;
-        if (inp) {
-          var setter = Object.getOwnPropertyDescriptor(W.HTMLInputElement.prototype, 'value').set;
-          var qs = ['a', 'e', 'o', 'i', 'u'];
-          for (var q = 0; q < qs.length; q++) { setter.call(inp, qs[q]); inp.dispatchEvent(new W.Event('input', { bubbles: true })); await mtSleep(900); mtAwScrape(d); mtStat(T('Aranıyor: ', 'Searching: ') + tabs[t2] + ' ' + (q + 1) + '/' + qs.length); }
-          setter.call(inp, ''); inp.dispatchEvent(new W.Event('input', { bubbles: true }));
-        }
-      } catch (e) { /* arama olmadı, kategori verisi yeter */ }
-    }
-    if (first && first.click) first.click();
-    var cc = gmGet('merit-aw', null) || { d: {} }; cc.full = Date.now(); cc.v = 4; cc.at = cc.at || Date.now(); gmSet('merit-aw', cc);
-    mtStat(T('Tarama tamam: ', 'Scan done: ') + Object.keys(cc.d).length + T(' ödül', ' awards'));
-  }
-  async function mtFullScan(force) {
-    if (mtFullBusy || !ui.mtr) return;
-    var c = gmGet('merit-aw', null);
-    if (!force) {
-      if (c && c.full && c.v === 4 && Date.now() - c.full < 6 * 3600000) return;
-      var lf = gmGet('merit-aw-try', 0); if (Date.now() - lf < 20 * 60000 && !(c && c.v !== 4 && !gmGet('merit-aw-v4', 0))) return;
-      if (c && c.v !== 4) gmSet('merit-aw-v4', 1);
-    }
-    gmSet('merit-aw-try', Date.now());
-    mtFullBusy = true; mtStat(T('Tarama sürüyor…', 'Scanning…'));
-    if (/sid=awards/i.test(location.search)) {
-      try { var d0 = null; for (var q = 0; q < 30; q++) { d0 = document.querySelector('li[class*="category___"]') ? document : null; if (d0) break; await mtSleep(500); } if (!d0) throw new Error('Awards sayfası okunamadı'); await mtCycle(document); } catch (e) { mtStat(String((e && e.message) || e)); }
-      mtFullBusy = false; mtLast = ''; mtRefresh(); return;
-    }
-    var fr = document.createElement('iframe');
-    fr.src = 'https://www.torn.com/page.php?sid=awards'; fr.setAttribute('aria-hidden', 'true');
-    fr.style.cssText = 'position:fixed;left:-3000px;top:0;width:1100px;height:900px;border:0;opacity:0;pointer-events:none;';
-    document.body.appendChild(fr);
+  /* Resmi API: odul tanimlari (torn/honors, torn/medals) + kazanilanlar (user/honors, user/medals); ilerleme personalstats ile hesaplanir */
+  var mtApiBusy = false;
+  function mtList(j, k) { var o = j && (j[k] || j.data || j); return Array.isArray(o) ? o : (o && typeof o === 'object' ? Object.keys(o).map(function (x) { var v = o[x]; if (v && typeof v === 'object' && v.id == null) v.id = x; return v; }) : []); }
+  async function mtApiAwards(force) {
+    if (mtApiBusy || !keyOk() || !ui.mtr) return;
+    var c0 = gmGet('merit-api', null);
+    if (!force && c0 && Date.now() - (c0.at || 0) < 6 * 3600000) return;
+    if (!force && c0 && c0.fail && Date.now() - c0.fail < 900000) return;
+    mtApiBusy = true;
     try {
-      var d = null, why = 'zaman aşımı';
-      for (var i = 0; i < 50; i++) { await mtSleep(500); try { d = fr.contentDocument; } catch (e) { d = null; why = 'çerçeve engellendi'; } if (d && d.querySelector('li[class*="category___"]')) break; d = null; }
-      if (!d) throw new Error(T('Arka plan taraması olmadı (' + why + '). Awards sayfasını bir kez açarsan orada otomatik taranır.', 'Background scan failed. Open the Awards page once and it will scan there.'));
-      await mtCycle(d);
-    } catch (e) { mtStat(String((e && e.message) || e)); }
-    fr.remove(); mtFullBusy = false; mtLast = ''; mtRefresh();
+      var kinds = [['honors', 'h'], ['medals', 'm']], c = gmGet('merit-aw', null) || { d: {} }, n = 0, err = '';
+      for (var i = 0; i < kinds.length; i++) {
+        var k = kinds[i][0], t = kinds[i][1], defs = null, own = null;
+        try { defs = await prApi('torn/' + k); } catch (e1) { err = String((e1 && e1.message) || e1); }
+        try { own = await prApi('user/' + k); } catch (e2) { err = err || String((e2 && e2.message) || e2); }
+        if (defs && defs.error) { err = (defs.error.error || 'API') + ' (' + defs.error.code + ')'; defs = null; }
+        var done = {}; mtList(own && !own.error ? own : null, k).forEach(function (x) { if (x && x.id != null) done[x.id] = 1; });
+        mtList(defs, k).forEach(function (x) {
+          if (!x || !x.name || !x.description || done[x.id]) return;
+          var ex = c.d[x.name]; if (ex && ex[0] > 0) return;
+          c.d[x.name] = [0, '', String(x.description).replace(/\s+/g, ' ').trim(), t]; n++;
+        });
+      }
+      if (n) { c.at = Date.now(); gmSet('merit-aw', c); }
+      gmSet('merit-api', n ? { at: Date.now(), n: n } : { at: (c0 && c0.at) || 0, fail: Date.now(), err: err });
+    } catch (e) { gmSet('merit-api', { at: (c0 && c0.at) || 0, fail: Date.now(), err: String((e && e.message) || e) }); }
+    mtApiBusy = false; mtLast = ''; mtRefresh();
   }
-  setTimeout(function () { mtFullScan(); setInterval(mtFullScan, 600000); }, 8000);
+  setTimeout(function () { mtApiAwards(); setInterval(mtApiAwards, 1800000); }, 9000);
+  /* Torn kurali: arka plan/gizli sayfa taramasi ve sayfayi otomatik tiklama yok; yalnizca acik awards sayfasinda gorunenler okunur */
+  async function mtFullScan(force) {
+    if (!ui.mtr) return;
+    if (/sid=awards/i.test(location.search)) { mtAwScrape(document); mtStat(T('Awards sayfasında görünenler kaydedildi. Sekme/kategori gezdikçe daha fazlası eklenir.', 'Recorded what the Awards page shows. Browse tabs/categories to add more.')); }
+    else if (force) mtStat(T('Awards sayfasını kendin aç; orada görünenler otomatik kaydedilir.', 'Open the Awards page yourself; what it shows is recorded automatically.'));
+    mtApiAwards(true);
+  }
   function mtAwScrape(doc) {
     doc = doc || document;
     var lis = doc.querySelectorAll('li[class*="locked___"]'), mds = doc.querySelectorAll('li[class*="medal___"]'); if (!lis.length && !mds.length && !doc.querySelector('li[class*="progressZero"]')) return;
@@ -6048,7 +6032,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.84';
+  var TH_VER = '1.6.87';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6149,6 +6133,9 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.87', 'o', ['Merit: ödül listesi artık resmi API verisinden (torn/honors, torn/medals, user/honors, user/medals) alınıyor; ilerleme istatistiklerden hesaplanıyor. Sayfa taraması gerekmiyor.'], ['Merit: awards list now comes from the official API (torn/honors, torn/medals, user/honors, user/medals); progress is computed from stats. No page scan needed.']],
+    ['1.6.86', 'o', ['Torn kurallarına uyum: Awards için gizli sayfa açıp otomatik gezme kaldırıldı. Artık yalnızca sen Awards sayfasını açınca, ekranda görünenler kaydediliyor. Teçhizat kaydı da sadece sekme görünürken alınıyor.'], ['Torn rules compliance: removed the hidden-page auto scan for Awards. Now only what is shown while you have the Awards page open is recorded. Loadout capture also only runs while the tab is visible.']],
+    ['1.6.85', 'n', ['Teçhizat kaydı yalnızca sekme görünürken alınıyor (Torn kuralı: arka plandaki sayfadan veri çekilmez).'], ['Loadout capture now only runs while the tab is visible (Torn rule: no data from background pages).']],
     ['1.6.84', 'o', ['Ortak paylaşım: API anahtarı bölümüne paylaşımı açıp kapatan düğme eklendi (daha önce "Paylaşma" dediysen buradan açabilirsin).'], ['Shared data: added a button in the API key section to turn sharing on or off (use it if you earlier chose not to share).']],
     ['1.6.83', 'o', ['Eşya sayfası: enerji içeceklerinin yanında taban E ve fraksiyon/kitap/diğer bonuslarla gerçek E miktarı gösteriliyor (adet varsa toplam). Gerçek sayfa yapısına göre düzeltildi.'], ['Items page: energy drinks now show base E and the real E with faction/book/other bonuses (total when you own several).']],
     ['1.6.81', 'o', ['Ortak teçhizat sunucusu: API anahtarı kayıtlıysa bir kez onay sorulur. Onaylarsan kendi teçhizat kayıtların paylaşılır ve saldırı sayfasında başkalarının gördüğü teçhizat gösterilir. API anahtarın ve kimliğin gönderilmez.'], ['Shared loadout server: if an API key is saved you are asked once. If you agree, your loadout records are shared and the attack page shows loadouts seen by other users. Your API key and identity are not sent.']]
