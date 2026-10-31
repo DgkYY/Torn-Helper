@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.90
+// @version      1.6.91
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2235,7 +2235,7 @@
       ldoArm = false; b.textContent = lang === 'en' ? 'Clear' : 'Temizle'; HOSTAPI.ldoClear(); ldoInfo();
     });
     setInterval(function () { if ($('home-settings').open) ldoInfo(); }, 3000);
-    function shrBtn() { var b = $('shr-toggle'); if (!b) return; try { var q = HOSTAPI.shrStat && HOSTAPI.shrStat(), el = $('shr-stat'); if (q && el) { var a1 = q.st ? (q.st.s === 200 ? (lang === 'en' ? 'last upload OK (' + q.st.n + ')' : 'son yükleme tamam (' + q.st.n + ')') : (lang === 'en' ? 'last upload failed: ' : 'son yükleme hata: ') + (q.st.s || q.st.e || '?')) : (lang === 'en' ? 'no upload yet' : 'henüz yükleme yok'); el.textContent = (lang === 'en' ? 'Records on this device: ' : 'Bu cihazdaki kayıt: ') + q.rec + (lang === 'en' ? ', with weapons: ' : ', silahlı: ') + q.w + (lang === 'en' ? ', uploaded: ' : ', yüklenen: ') + q.up + ' · ' + a1; } } catch (e0) {} var v = null; try { v = HOSTAPI.shrGet ? HOSTAPI.shrGet() : null; } catch (e) {} b.textContent = v === 1 ? (lang === 'en' ? 'Sharing: ON (click to turn off)' : 'Paylaşım: AÇIK (kapatmak için tıkla)') : (lang === 'en' ? 'Sharing: OFF (click to turn on and agree to the text above)' : 'Paylaşım: KAPALI (yukarıdaki metni onaylayıp açmak için tıkla)'); }
+    function shrBtn() { var b = $('shr-toggle'); if (!b) return; try { var q = HOSTAPI.shrStat && HOSTAPI.shrStat(), el = $('shr-stat'); if (q && el) { var a1 = q.st ? (q.st.s === 200 ? (lang === 'en' ? 'last upload OK (' + q.st.n + ')' : 'son yükleme tamam (' + q.st.n + ')') : (lang === 'en' ? 'last upload failed: ' : 'son yükleme hata: ') + (q.st.s || q.st.e || '?') + (q.st.s && q.st.e ? ' (' + q.st.e + ')' : '')) : (lang === 'en' ? 'no upload yet' : 'henüz yükleme yok'); el.textContent = (lang === 'en' ? 'Records on this device: ' : 'Bu cihazdaki kayıt: ') + q.rec + (lang === 'en' ? ', with weapons: ' : ', silahlı: ') + q.w + (lang === 'en' ? ', uploaded: ' : ', yüklenen: ') + q.up + ' · ' + a1; } } catch (e0) {} var v = null; try { v = HOSTAPI.shrGet ? HOSTAPI.shrGet() : null; } catch (e) {} b.textContent = v === 1 ? (lang === 'en' ? 'Sharing: ON (click to turn off)' : 'Paylaşım: AÇIK (kapatmak için tıkla)') : (lang === 'en' ? 'Sharing: OFF (click to turn on and agree to the text above)' : 'Paylaşım: KAPALI (yukarıdaki metni onaylayıp açmak için tıkla)'); }
     if ($('shr-toggle')) { $('shr-toggle').addEventListener('click', function () { try { var v = HOSTAPI.shrGet(); HOSTAPI.shrSet(v === 1 ? 0 : 1); } catch (e) {} shrBtn(); }); shrBtn(); setInterval(function () { if ($('home-settings').open) shrBtn(); }, 3000); }
     $('health-copy').addEventListener('click', function () {
       var t = healthText();
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.90', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.91', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5386,7 +5386,7 @@
       var att = await shrAtt(); if (!att) { shrBusy = false; return; }
       var recs = ids.map(function (k) { var r = db[k]; return { id: Number(k), level: r.lvl || null, chain: r.ch || null, result: r.res || null, respect: r.resp == null ? null : r.resp, w: r.w, a: r.a || [] }; });
       var rs = await srvReq('POST', '/v1/loadout', { schema: 1, att: att, records: recs });
-      gmSet('shr-st', { t: Date.now(), s: rs.status, n: recs.length });
+      gmSet('shr-st', { t: Date.now(), s: rs.status, n: recs.length, e: rs.json && rs.json.error ? String(rs.json.error).slice(0, 40) + (rs.json.detail ? ': ' + String(rs.json.detail).slice(0, 80) : '') : '' });
       if (rs.status === 200) { ids.forEach(function (k) { up[k] = db[k].t; }); gmSet('shr-up', up); }
       else gmSet('shr-off', Date.now() + (rs.status === 429 ? 6 * 3600000 : 600000));
     } catch (e) { gmSet('shr-off', Date.now() + 600000); gmSet('shr-st', { t: Date.now(), s: 0, n: 0, e: String((e && e.message) || e).slice(0, 80) }); }
@@ -6003,7 +6003,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.90';
+  var TH_VER = '1.6.91';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6104,6 +6104,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.91', 'n', ['Ortak paylaşım: sunucunun hata nedeni durum satırında gösteriliyor.'], ['Shared data: the server error reason is shown in the status line.']],
     ['1.6.90', 'n', ['Ortak paylaşım: ayarlarda kayıt/yükleme durumu satırı eklendi.'], ['Shared data: added a record/upload status line in settings.']],
     ['1.6.89', 'n', ['Ortak sunucu adresi yeni alt alan adına taşındı.'], ['Shared server address moved to the new subdomain.']],
     ['1.6.88', 'o', ['Gym: Torn kurallarına uyum için gym panellerini otomatik açıp kapatan tarama kaldırıldı. Gym bilgileri artık resmi API verisinden (torn/gyms) alınıyor; açtığın gym de kaydedilmeye devam ediyor.'], ['Gym: removed the automatic opening/closing of gym panels (Torn rules). Gym data now comes from the official API (torn/gyms); gyms you open yourself are still recorded.']],
