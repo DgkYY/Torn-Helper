@@ -1,6 +1,6 @@
 # Torn-Helper
 
-# English
+**English** · [Türkçe](#türkçe)
 
 A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.torn.com): target list with quick-attack buttons, Halloween/Mug queue, Ranked War mode, faction management tools and an abroad-price checker. The interface is available in English and Turkish.
 
@@ -45,8 +45,17 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
   - **Faction OC:** per-crime average slot success rate, weighted success (role weights from tornprobability.com) and the weakest link.
   - **Company:** Stock Shipments auto-fill by target days and a "fill the warehouse" button.
   - **Gym:** ready-made Baldr's Ratio and Hank's Ratio targets.
+  - **Home page, Battle Stats:** a second panel under Battle Stats with your effective stats including drug, booster and other temporary modifiers (updates when you take a drug or get a debuff).
+  - **Missions:** a short summary of what each Duke mission objective asks for; objectives and rewards are translated.
+  - **Gym:** estimated gain for the next train (Vladar formula, calibrated from your last train). Gym dots are read from the gym panel and the API; the script quietly visits each gym once to read its dots (retried after 14 days) and never presses a purchase button.
+  - **Company:** a "TRAIN ALL" button above the employee list trains every employee who can be trained, one after another.
+  - **Profile:** your age is also shown as years, months and days under the Age box.
+  - **Stock Market:** a "$ amount" field above each Buy and Sell box fills in the share count for you (shortcuts like 5m or 250k work).
+  - **Merit Tracker extras:** pin awards on top with a star; awards whose target is reached show 100%.
   - **Items, loadout, Item Market and Bazaar:** weapon bonus descriptions written next to the bonus icon; Bazaar items show market price and estimated profit after the 5% fee, and cheap listings are highlighted (not for weapons and armor, whose price depends on stats and bonuses). NPC shop Shop Analyzer shows market price and profit.
 - **Notifications:** one Settings section where you choose each alert separately (energy, drug, medical, booster, chain, hospital and more), plus sound and a pre-warning.
+- **Settings:** search box, ready-made profiles (Minimal / Full, with Undo), a version indicator with "Check for updates", a health check that tells you if a Torn page change broke one of the features ("Copy report" for bug reports), and the author's contact (YinxYang [3637531] · Discord: _yinyang).
+- **Phone / Torn PDA:** on screens up to 600 px wide the attack mini window shows only energy, target name and status, Attack and Skip; the flight tips panel is compact. Missing `GM_` functions are replaced by built-in fallbacks. Not every feature has been tested inside Torn PDA; please report problems.
 - **Updates:** a patch-notes window opens once for each new version, says where the new option is in Settings and shows skipped versions page by page.
 - **Interface**
   - Opens as a side panel; the Wide/Narrow button is remembered per mode (Faction management opens wide).
@@ -141,8 +150,17 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
   - **Faction OC:** her suç için ortalama slot başarısı, ağırlıklı başarı (rol ağırlıkları tornprobability.com'dan) ve en zayıf halka.
   - **Şirket:** hedef gün sayısına göre otomatik Stock Shipments doldurma ve "Depoyu doldur" düğmesi.
   - **Gym:** hazır Baldr's Ratio ve Hank's Ratio hedefleri.
+  - **Ana sayfa, Battle Stats:** Battle Stats'ın altında ilaç, booster ve diğer geçici etkilerle güncel (efektif) statlarını gösteren ikinci bir pencere (ilaç kullanınca ya da debuff yiyince güncellenir).
+  - **Missions:** her Duke görevi için ne istediğinin kısa özeti; hedefler ve ödüller Türkçeye çevrilir.
+  - **Gym:** sıradaki antrenman için tahmini kazanç (Vladar formülü, son antrenmanından kalibre edilir). Gym noktaları gym panelinden ve API'den okunur; script her gym'i bir kez sessizce gezip noktalarını okur (14 gün sonra tekrar dener) ve hiçbir satın alma düğmesine basmaz.
+  - **Şirket:** çalışan listesinin üstündeki "HEPSİNİ EĞİT" düğmesi, eğitilebilen her çalışanı sırayla eğitir.
+  - **Profil:** Age kutusunun altında yaşın yıl, ay ve gün olarak da yazılır.
+  - **Borsa:** her Buy ve Sell kutusunun üstündeki "$ miktar" alanı hisse adedini senin yerine doldurur (5m, 250k gibi kısaltmalar çalışır).
+  - **Merit Tracker ekleri:** ödülleri yıldızla üste sabitleme; hedefi tamamlanmış ödüller %100 gösterilir.
   - **Eşyalar, loadout, Item Market ve Bazaar:** silah bonus açıklamaları bonus ikonunun yanında yazılır; Bazaar eşyalarında piyasa fiyatı ve %5 kesintiden sonra tahmini kâr görünür, ucuz ilanlar vurgulanır (fiyatı stat ve bonusa bağlı olan silah ve zırhlarda yapılmaz). NPC mağazalarında Shop Analyzer piyasa fiyatını ve kârı gösterir.
 - **Bildirimler:** her uyarıyı ayrı seçtiğin tek bir Ayarlar bölümü (enerji, ilaç, tıbbi, booster, chain, hastane vb.), ayrıca ses ve ön uyarı.
+- **Ayarlar:** arama kutusu, hazır profiller (Sade / Tam, Geri al ile), sürüm göstergesi ve "Güncellemeyi kontrol et", Torn bir sayfayı değiştirip bir özelliği bozarsa haber veren sağlık kontrolü (hata bildirimi için "Raporu kopyala") ve yapımcının iletişim bilgisi (YinxYang [3637531] · Discord: _yinyang).
+- **Telefon / Torn PDA:** 600 px ve altı ekranlarda saldırı mini penceresi yalnızca enerji, hedef adı ve durumu, Saldır ve Atla'yı gösterir; uçuş önerileri paneli kompakttır. Eksik `GM_` fonksiyonları yerleşik yedeklerle karşılanır. Her özellik Torn PDA içinde denenmedi; sorun görürsen bildir.
 - **Güncellemeler:** her yeni sürümde bir kez açılan güncelleme notu penceresi; yeni ayarın Ayarlar'da nerede olduğunu yazar, atlanan sürümleri sayfa sayfa gösterir.
 - **Arayüz**
   - Yan panel olarak açılır, Geniş/Dar düğmesi her mod için hatırlanır (Faction yönetimi geniş açılır).
