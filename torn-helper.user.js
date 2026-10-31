@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.72
+// @author       DgkYY
+// @version      1.6.73
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3002,7 +3003,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.72', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.73', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5819,7 +5820,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.72';
+  var TH_VER = '1.6.73';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5912,7 +5913,8 @@
     ['1.6.69', 'n', ['Merit Tracker: Güney Afrika, BAE ve Birleşik Krallık seyahat sayaçlarının doğru adları kullanıldı; "Import N items" honorları için gerçek sayaç bağlandı.'], ['Merit Tracker: correct stat names for South Africa, UAE and United Kingdom travel counters; real counter wired to the "Import N items" honors.']],
     ['1.6.70', 'n', ['Merit Tracker: "Travel to the United Arab Emirates" gibi "the" ile başlayan ülke adları artık eşleşiyor; "Defeat 100 people while abroad" honoru yurtdışı galibiyet sayacına bağlandı.'], ['Merit Tracker: country names starting with "the" (e.g. the United Arab Emirates) now match, and "Defeat 100 people while abroad" uses the abroad-wins counter.']],
     ['1.6.71', 'n', ['Kod temizliği: kullanılmayan değişkenler silindi, genel denetim yapıldı.'], ['Code cleanup: unused variables removed after a full review.']],
-    ['1.6.72', 'o', ['Yurtdışı mağaza sayfasında her ürünün altına Torn piyasa değeri ve birim başına kâr yazılıyor (ortalama piyasa değerine göre). Ayarlardan kapatılabilir.'], ['Abroad shop page: each item now shows the Torn market value and the profit per unit (based on average market value). Can be turned off in settings.']]
+    ['1.6.72', 'o', ['Yurtdışı mağaza sayfasında her ürünün altına Torn piyasa değeri ve birim başına kâr yazılıyor (ortalama piyasa değerine göre). Ayarlardan kapatılabilir.'], ['Abroad shop page: each item now shows the Torn market value and the profit per unit (based on average market value). Can be turned off in settings.']],
+    ['1.6.73', 'n', ['Tampermonkey betik bilgisine geliştirici adı eklendi.'], ['Developer name added to the Tampermonkey script info.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
