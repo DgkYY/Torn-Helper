@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.81
+// @version      1.6.82
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3019,7 +3019,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.81', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.82', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4246,7 +4246,7 @@
   var gybBusy = false, GYB_SRC = { faction_perks: ['fraksiyon', 'faction'], education_perks: ['eğitim', 'education'], property_perks: ['mülk', 'property'], job_perks: ['iş', 'job'], book_perks: ['kitap', 'book'], stock_perks: ['hisse', 'stock'], merit_perks: ['merit', 'merit'], enhancer_perks: ['enhancer', 'enhancer'], faction: ['fraksiyon', 'faction'], education: ['eğitim', 'education'], property: ['mülk', 'property'] };
   async function gybLoad() {
     var c = gmGet('gym-perks2', null);
-    if (gybBusy || !keyOk() || (c && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
+    if (gybBusy || !keyOk() || (c && c.en && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
     gybBusy = true;
     try {
       var out = [], seen = {};
@@ -4266,9 +4266,10 @@
       try { var kk = keyOk(); var j1 = await (await gmFetch('https://api.torn.com/user/?selections=perks&comment=torn-helper&key=' + encodeURIComponent(kk))).json(); if (j1 && !j1.error) walk(j1, '', 0); } catch (e1) {}
       try { var ju = await prApi('faction/upgrades'); if (ju && !ju.error) walk(ju, 'faction_perks', 0); } catch (e2) {}
       var gm = out.filter(function (x) { return /%/.test(x[1]) && /gym|steadfast|strength|defense|speed|dexterity/i.test(x[1]); });
-      gmSet('gym-perks2', { at: Date.now(), d: gm, n: out.length, all: out.map(function (x) { return x[0] + ': ' + x[1]; }).slice(0, 80) });
+      var en = out.filter(function (x) { return /energy (drink|can)/i.test(x[1]) && !/cooldown/i.test(x[1]); });
+      gmSet('gym-perks2', { at: Date.now(), en: en, d: gm, n: out.length, all: out.map(function (x) { return x[0] + ': ' + x[1]; }).slice(0, 80) });
       try { console.log('[torn-helper] gym perks', gm, out.length); } catch (e3) {}
-    } catch (e) { gmSet('gym-perks2', { at: (c && c.at) || 0, d: c && c.d, fail: Date.now(), err: String((e && e.message) || e) }); }
+    } catch (e) { gmSet('gym-perks2', { at: (c && c.at) || 0, d: c && c.d, en: (c && c.en) || [], fail: Date.now(), err: String((e && e.message) || e) }); }
     gybBusy = false;
   }
   function gybFor(stat) {
@@ -4286,6 +4287,49 @@
     var parts = Object.keys(by).map(function (k) { return k + ' +' + Math.round(by[k] * 100) / 100 + '%'; });
     return { ok: true, c: '#7dd3fc', tx: T('Bonus: +', 'Bonus: +') + Math.round(tot * 100) / 100 + '% (' + parts.join(', ') + ')' };
   }
+  /* Esya sayfasi: enerji icecekleri icin bonuslu E (taban degerler Torn wiki) */
+  var ENR = { 'goose juice': 5, 'damp valley': 10, 'crocozade': 15, 'munster': 20, 'santa shooters': 20, 'red cow': 25, 'rockstar rudolph': 25, 'taurine elite': 30, 'x-mass': 30 };
+  function enrMult() {
+    var c = gmGet('gym-perks2', null), m = 1, by = [];
+    ((c && c.en) || []).forEach(function (x) {
+      var pc = /(\d+(?:\.\d+)?)\s*%/.exec(x[1]), f = pc ? 1 + Number(pc[1]) / 100 : (/doubl|2x|x2/i.test(x[1]) ? 2 : 1);
+      if (f === 1) return;
+      m *= f; var sn = GYB_SRC[x[0]] ? T(GYB_SRC[x[0]][0], GYB_SRC[x[0]][1]) : T('diğer', 'other');
+      by.push(sn + ' ×' + Math.round(f * 100) / 100);
+    });
+    return { m: m, by: by, ok: !!(c && c.en) };
+  }
+  function enrTick() {
+    if (!/item\.php/.test(location.pathname)) return;
+    var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
+    gybLoad();
+    var mu = enrMult(), sig = mu.m + '|' + mu.by.join(',');
+    var els = root.querySelectorAll('li, tr');
+    for (var i = 0; i < els.length; i++) {
+      var li = els[i], tx = li.textContent || '';
+      if (tx.length > 300 || tx.indexOf('Can of') < 0) continue;
+      if (li.querySelector('li')) continue;
+      var nm = /Can of ([A-Za-z\- ]+?)(?: x(\d+))?(?:\s{2,}|$|\s*[\n\r]|\s+[A-Z][a-z]+:)/.exec(tx.replace(/\s+/g, ' ').trim());
+      var key = nm ? nm[1].toLowerCase().trim() : '', base = ENR[key];
+      if (!base) { for (var k in ENR) if (tx.toLowerCase().indexOf('can of ' + k) >= 0) { base = ENR[k]; key = k; nm = nm || [0, k, '']; break; } }
+      var ex = li.querySelector('.th-enr');
+      if (!base) { if (ex) ex.remove(); continue; }
+      var q = Number((/ x(\d+)(?!\d)/.exec(tx.replace(/\s+/g, ' ')) || [0, 1])[1]) || 1;
+      var tot = Math.round(base * mu.m * 100) / 100;
+      var txt = '⚡ ' + base + (mu.m !== 1 ? ' → ' + tot : '') + ' E' + (q > 1 ? ' (×' + q + ' = ' + Math.round(tot * q * 100) / 100 + ')' : '') + (mu.by.length ? ' [' + mu.by.join(', ') + ']' : (mu.ok ? '' : ' …'));
+      if (ex && ex.getAttribute('data-s') === txt) continue;
+      if (!ex) {
+        ex = document.createElement('span'); ex.className = 'th-enr';
+        ex.style.cssText = 'margin-left:10px;color:#fbbf24;font-size:11px;font-weight:700;white-space:nowrap;pointer-events:none;';
+        var nameEl = null, all = li.querySelectorAll('*');
+        for (var j = 0; j < all.length; j++) { if (!all[j].children.length && /Can of/.test(all[j].textContent) && !all[j].closest('.th-enr')) { nameEl = all[j]; break; } }
+        (nameEl && nameEl.parentNode ? nameEl.parentNode : li).appendChild(ex);
+        if (nameEl && nameEl.parentNode) nameEl.parentNode.insertBefore(ex, nameEl.nextSibling);
+      }
+      ex.setAttribute('data-s', txt); ex.textContent = txt;
+    }
+  }
+  setInterval(enrTick, 1500);
   function gysStatInject(chosen, st) {
     var lines = gysStatLines(chosen, st), lis = document.querySelectorAll('#gymroot ul[class*="properties___"] > li');
     gybLoad(); Object.keys(lines).forEach(function (k2) { var bl = gybFor(k2); if (bl) lines[k2].push(bl); });
@@ -6007,7 +6051,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.81';
+  var TH_VER = '1.6.82';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6108,6 +6152,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.82', 'o', ['Eşya sayfası: enerji içeceklerinin yanında taban E ve fraksiyon/kitap/diğer bonuslarla gerçek E miktarı gösteriliyor (adet varsa toplam).'], ['Items page: energy drinks now show base E and the real E with faction/book/other bonuses (total when you own several).']],
     ['1.6.81', 'o', ['Ortak teçhizat sunucusu: API anahtarı kayıtlıysa bir kez onay sorulur. Onaylarsan kendi teçhizat kayıtların paylaşılır ve saldırı sayfasında başkalarının gördüğü teçhizat gösterilir. API anahtarın ve kimliğin gönderilmez.'], ['Shared loadout server: if an API key is saved you are asked once. If you agree, your loadout records are shared and the attack page shows loadouts seen by other users. Your API key and identity are not sent.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
