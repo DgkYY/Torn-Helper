@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.70
+// @version      1.6.71
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2620,7 +2620,7 @@
     arg: ['Arjantin', 167], swi: ['İsviçre', 175], jap: ['Japonya', 225], chi: ['Çin', 242], uae: ['BAE', 271], sou: ['Güney Afrika', 297]
   };
   var trv = { rows: [], stockAt: 0, prices: {}, names: {}, pricesAt: 0, auto: null, cfg: { cap: 15, fly: 'auto', fee: 5, budget: 0, capAuto: true, country: '', sort: 'hour', onlypos: true, instock: true, auto: false } };
-  var trvBusy = false, trvTimer = null;
+  var trvBusy = false;
   function loadTrv() {
     try { var c = JSON.parse(lsGet(TRV_LS) || 'null'); if (c) Object.assign(trv.cfg, c); } catch (e) {}
     try { var pc = JSON.parse(lsGet('torn-trv-cap-v1') || 'null'); if (pc && pc.n >= 1 && pc.n <= 100) trv.pageCap = pc; } catch (e) {}
@@ -3002,7 +3002,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.70', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.71', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4862,7 +4862,7 @@
       if (c && c.d && Date.now() - c.at < 600000) j = c.d;
       else { j = await prApi('user/merits'); if (j && j.error) throw new Error(j.error.error || 'api'); gmSet('merits', { at: Date.now(), d: j }); }
       var ups = gmGet('merit-ups', null), me = (j && j.merits) || j || {}, h = '<div style="font-weight:700;margin-bottom:6px;">Merit Tracker</div>';
-      var av = me.available, us = me.used, TD = 'padding:2px 4px;border-top:1px solid #374151;color:#e5e7eb;';
+      var av = me.available, us = me.used;
       h += '<div style="color:#fbbf24;margin-bottom:6px;">' + T('Boşta merit: ', 'Available merits: ') + '<b>' + (av != null ? av : '?') + '</b> · ' + T('Harcanan: ', 'Used: ') + '<b>' + (us != null ? us : '?') + '</b></div>';
       mtTrvLoad(); var aw = gmGet('merit-aw', null), al = aw && aw.d ? Object.keys(aw.d).map(function (k) { return [k, mtEnr(aw.d[k])]; }).filter(function (x) { return x[1][0] > 0 && x[1][0] < 100; }).sort(function (x, y) { return y[1][0] - x[1][0]; }).slice(0, 12) : [];
       var pinL = mtPins().filter(function (k) { return aw && aw.d && aw.d[k]; });
@@ -4987,7 +4987,7 @@
     ['stocks', /sid=stocks/i, /stock|dividend/i, 'Borsa']
   ];
   var MT_COUNTRIES = ['Mexico', 'Cayman Islands', 'Canada', 'Hawaii', 'United Kingdom', 'Argentina', 'Switzerland', 'Japan', 'China', 'UAE', 'United Arab Emirates', 'South Africa'];
-  var mtCountry = '', mtLast = '', mtAutoT = 0;
+  var mtCountry = '', mtLast = '';
   document.addEventListener('click', function (ev) {
     if (!/sid=travel|travelagency/i.test(location.pathname + location.search)) return;
     var el = ev.target, n = 0;
@@ -5166,7 +5166,6 @@
       var vis = mb.querySelector('input.input-money:not([type="hidden"])'), act = mb.querySelector('[class*="actions___"]');
       var dd = mb.closest('[class*="stockDropdown___"]'), ul = dd && dd.previousElementSibling;
       if (!vis || !act || !ul) return;
-      var isBuy = !!mb.closest('[class*="buyBlock___"]');
       var wrap = document.createElement('div'); wrap.className = 'th-stkm';
       wrap.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0;font:12px Arial,sans-serif;color:#9ca3af;';
       var inp = document.createElement('input'); inp.type = 'text'; inp.setAttribute('autocomplete', 'off'); inp.placeholder = T('$ miktar (5m, 250k…)', '$ amount (5m, 250k…)');
@@ -5794,7 +5793,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.70';
+  var TH_VER = '1.6.71';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5885,7 +5884,8 @@
     ['1.6.67', 'n', ['Merit Tracker: hedef sayıya ulaşılmış honorlar (ör. Mule, Smuggler, Travel to ...) artık "—" yerine %100 ve ✓ ile gösteriliyor.'], ['Merit Tracker: awards whose target is already reached now show 100% with a check mark instead of a dash.']],
     ['1.6.68', 'o', ['Merit Tracker: tamamlanmış (%100) honor ve medaller sayfa panellerinden kaldırıldı. Aynı türden başka kademenin ilerlemesi biliniyorsa (ör. Import 10,000 eşya) küçük kademeler (Mule, Smuggler) için de bundan yararlanılıyor.'], ['Merit Tracker: completed (100%) honors and medals are removed from the page panels. When another tier of the same award has known progress (e.g. Import 10,000 items), it is also used for the lower tiers (Mule, Smuggler).']],
     ['1.6.69', 'n', ['Merit Tracker: Güney Afrika, BAE ve Birleşik Krallık seyahat sayaçlarının doğru adları kullanıldı; "Import N items" honorları için gerçek sayaç bağlandı.'], ['Merit Tracker: correct stat names for South Africa, UAE and United Kingdom travel counters; real counter wired to the "Import N items" honors.']],
-    ['1.6.70', 'n', ['Merit Tracker: "Travel to the United Arab Emirates" gibi "the" ile başlayan ülke adları artık eşleşiyor; "Defeat 100 people while abroad" honoru yurtdışı galibiyet sayacına bağlandı.'], ['Merit Tracker: country names starting with "the" (e.g. the United Arab Emirates) now match, and "Defeat 100 people while abroad" uses the abroad-wins counter.']]
+    ['1.6.70', 'n', ['Merit Tracker: "Travel to the United Arab Emirates" gibi "the" ile başlayan ülke adları artık eşleşiyor; "Defeat 100 people while abroad" honoru yurtdışı galibiyet sayacına bağlandı.'], ['Merit Tracker: country names starting with "the" (e.g. the United Arab Emirates) now match, and "Defeat 100 people while abroad" uses the abroad-wins counter.']],
+    ['1.6.71', 'n', ['Kod temizliği: kullanılmayan değişkenler silindi, genel denetim yapıldı.'], ['Code cleanup: unused variables removed after a full review.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
@@ -5999,7 +5999,7 @@
   setInterval(shpTick, 800);
 
   /* Crime Profitability: her denemenin sonucunu seçenek bazında kaydet, ortalama $/nerve göster */
-  var crmSeen = false, crmArm = '', crmBusy = false, crmReset = 0;
+  var crmSeen = false, crmReset = 0;
   function crmFmt(n) { n = Math.round(n); return n >= 1e6 ? '$' + (n / 1e6).toFixed(2) + 'm' : n >= 1e4 ? '$' + (n / 1e3).toFixed(1) + 'k' : '$' + n.toLocaleString('en-US'); }
   function crmName(nm) {
     var w = document.createTreeWalker(nm, 4, null, false), n;
