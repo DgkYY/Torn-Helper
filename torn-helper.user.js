@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
-// @version      1.6.68
+// @version      1.6.69
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3002,7 +3002,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.68', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.69', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4896,7 +4896,7 @@
       pn.innerHTML = h;
     } catch (e) { pn.textContent = T('Alınamadı: ', 'Could not load: ') + ((e && e.message) || '?'); }
   }
-  var MT_STAT = { 'Argentina': 'argtravel', 'Mexico': 'mextravel', 'UAE': 'dubtravel', 'United Arab Emirates': 'dubtravel', 'Hawaii': 'hawtravel', 'Japan': 'japtravel', 'United Kingdom': 'lontravel', 'South Africa': 'soutravel', 'Switzerland': 'switravel', 'China': 'chitravel', 'Cayman Islands': 'caytravel', 'Canada': 'cantravel' };
+  var MT_STAT = { 'Argentina': 'argtravel', 'Mexico': 'mextravel', 'UAE': 'uaetravel', 'United Arab Emirates': 'uaetravel', 'Hawaii': 'hawtravel', 'Japan': 'japtravel', 'United Kingdom': 'uktravel', 'South Africa': 'satravel', 'Switzerland': 'switravel', 'China': 'chitravel', 'Cayman Islands': 'caytravel', 'Canada': 'cantravel' };
   var MT_RULES = [
     [/finishing hits? with rifles?/i, /rifle.*hit|hit.*rifle/], [/finishing hits? with shotguns?/i, /shotgun.*hit|hit.*shotgun/], [/finishing hits? with pistols?/i, /pistol.*hit|hit.*pistol/],
     [/finishing hits? with smgs?/i, /smg.*hit|hit.*smg|submachine/], [/finishing hits? with (fists|fist)/i, /h2h|hand.*hit|fist|kick/], [/finishing hits? with clubbing/i, /club.*hit|hit.*club|axe/],
@@ -4904,7 +4904,7 @@
     [/finishing hits? with machine/i, /machine.*hit|hit.*machine/], [/finishing hits? with heavy/i, /heavy.*hit|hit.*heavy|artillery/], [/finishing hits? with temporary/i, /temp.*hit|hit.*temp|temporary/],
     [/critical hits/i, /critical/], [/successfully defend against|win [\d,]+ defends/i, /defendswon$|defends\.won$|defends\.won\./], [/win [\d,]+ attacks?/i, /attackswon$|attacks\.won$/],
     [/rounds/i, /roundsfired|rounds.*fired|fired.*rounds/], [/refill your energy/i, /energyrefill|refills?\.energy|^refills$/], [/refill your nerve/i, /nerverefill|refills?\.nerve/], [/travel abroad|travel [\d,]+ times|trips/i, /traveltimes|travel.*(times|total)$/],
-    [/import [\d,]+ items? from abroad/i, /itemsboughtabroad|itemsabroad|boughtabroad/],
+    [/import [\d,]+ items? from abroad/i, /itemsboughtabroad|itemsabroad|boughtabroad|travel\.items_bought$/],
     [/collect [\d,]+ bount/i, /bountiescollected|bount.*collected/], [/organi[sz]ed crimes/i, /organi[sz]edcrimes|organi[sz]ed.*crimes/], [/revive/i, /revives/],
     [/gain [\d,]+ strength/i, /(^|\.)strength$/], [/gain [\d,]+ speed/i, /(^|\.)speed$/], [/gain [\d,]+ dexterity/i, /(^|\.)dexterity$/], [/gain [\d,]+ defense/i, /(^|\.)defense$/], [/total stats/i, /totalstats|(^|\.)total$/],
     [/mug/i, /moneymugged|mugged/], [/stalemate|draw/i, /draw/]
@@ -4940,7 +4940,7 @@
     if (v[1] || v[0] > 0) return v;
     var t = gmGet('merit-trv', null); if (!t || !t.d) return v;
     var ds = v[2] || '', n = 0, c = null, m = /Travel to (.+?) ([\d,]+) times/i.exec(ds);
-    if (m) { var st = MT_STAT[m[1].trim()], tv = st ? mtFind(t.d, new RegExp(st + '$')) : null; if (tv == null) { var cn = m[1].trim().toLowerCase().replace(/[^a-z]/g, ''); tv = mtFind(t.d, new RegExp(cn + '.*trav|trav.*' + cn + '|^' + cn.slice(0, 3) + 'trav|\.' + cn.slice(0, 3) + 'trav')); } if (tv != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(tv); } }
+    if (m) { var st = MT_STAT[m[1].trim()], tv = st ? mtFind(t.d, new RegExp(st + '$')) : null; if (tv == null) { var cn = m[1].trim().toLowerCase().replace(/[^a-z]/g, ''); tv = mtFind(t.d, new RegExp(cn + '.*trav|trav.*' + cn + '|travel\\.' + m[1].trim().toLowerCase().replace(/ /g, '_') + '$|^' + cn.slice(0, 3) + 'trav|\.' + cn.slice(0, 3) + 'trav')); } if (tv != null) { n = parseFloat(m[2].replace(/,/g, '')); c = Number(tv); } }
     else {
       var nm = /([\d,]*\d)/.exec(ds); if (!nm) return v;
       for (var i = 0; i < MT_RULES.length && c == null; i++) if (MT_RULES[i][0].test(ds)) { var fv = mtFind(t.d, MT_RULES[i][1]); if (fv != null) { c = Number(fv); n = parseFloat(nm[1].replace(/,/g, '')); } }
@@ -5793,7 +5793,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.68';
+  var TH_VER = '1.6.69';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -5882,7 +5882,8 @@
     ['1.6.64', 'o', ['Profildeki yaş artık yıl + ay + gün olarak yazılıyor. Torn PDA uyumluluğu: PDA ile eksik olabilen GM_ fonksiyonları için yedekler eklendi.'], ['Profile age now shows years + months + days. Torn PDA compatibility: fallbacks added for GM_ functions that may be missing in PDA.']],
     ['1.6.66', 'n', ['Merit Tracker: İsviçre, Çin, Meksika gibi ülkelerin "Travel to" honorları için daha esnek istatistik eşleştirmesi; "Import N items from abroad" honorlarına ilerleme eklendi.'], ['Merit Tracker: more flexible stat matching for "Travel to" honors (Switzerland, China, Mexico...), and "Import N items from abroad" honors get progress.']],
     ['1.6.67', 'n', ['Merit Tracker: hedef sayıya ulaşılmış honorlar (ör. Mule, Smuggler, Travel to ...) artık "—" yerine %100 ve ✓ ile gösteriliyor.'], ['Merit Tracker: awards whose target is already reached now show 100% with a check mark instead of a dash.']],
-    ['1.6.68', 'o', ['Merit Tracker: tamamlanmış (%100) honor ve medaller sayfa panellerinden kaldırıldı. Aynı türden başka kademenin ilerlemesi biliniyorsa (ör. Import 10,000 eşya) küçük kademeler (Mule, Smuggler) için de bundan yararlanılıyor.'], ['Merit Tracker: completed (100%) honors and medals are removed from the page panels. When another tier of the same award has known progress (e.g. Import 10,000 items), it is also used for the lower tiers (Mule, Smuggler).']]
+    ['1.6.68', 'o', ['Merit Tracker: tamamlanmış (%100) honor ve medaller sayfa panellerinden kaldırıldı. Aynı türden başka kademenin ilerlemesi biliniyorsa (ör. Import 10,000 eşya) küçük kademeler (Mule, Smuggler) için de bundan yararlanılıyor.'], ['Merit Tracker: completed (100%) honors and medals are removed from the page panels. When another tier of the same award has known progress (e.g. Import 10,000 items), it is also used for the lower tiers (Mule, Smuggler).']],
+    ['1.6.69', 'n', ['Merit Tracker: Güney Afrika, BAE ve Birleşik Krallık seyahat sayaçlarının doğru adları kullanıldı; "Import N items" honorları için gerçek sayaç bağlandı.'], ['Merit Tracker: correct stat names for South Africa, UAE and United Kingdom travel counters; real counter wired to the "Import N items" honors.']]
   ];
   function thVerCmp(a, b) { var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (var i = 0; i < 3; i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; } return 0; }
   var pnShown = false;
