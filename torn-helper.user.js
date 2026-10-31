@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.87
+// @version      1.6.88
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3023,7 +3023,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.87', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.88', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5615,38 +5615,7 @@
   ['mousemove', 'keydown', 'mousedown', 'touchstart', 'wheel'].forEach(function (n) { document.addEventListener(n, function () { gyeAct = Date.now(); }, true); });
   function gyeSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function gyeBackBtn() { var bs = document.querySelectorAll('#gymroot [class*="actionWrapper___"] button'); for (var i = 0; i < bs.length; i++) if (/^\s*(back to gym|cancel)\s*$/i.test(bs[i].textContent || '')) return bs[i]; return null; }
-  /* kayıtlı olmayan gymlerin bilgi kutusunu arka planda bir kez açıp okur; yalnızca gym simgesine ve BACK TO GYM düğmesine basar */
-  async function gyeCrawl() {
-    if (gyeCrawlBusy || gyePend || Date.now() - gyeAct < 4000 || document.hidden) return;
-    var root = document.getElementById('gymroot'); if (!root || root.querySelector('[class*="gymDetailsWrapper___"] [class*="progressBar___"]')) return;
-    var gd = gmGet('gym-dots', {}) || {}, tr0 = gmGet('gym-tried', {}) || {}, tiles = root.querySelectorAll('button[class*="gymButton___"]'), todo = [], i;
-    for (i = 0; i < tiles.length; i++) {
-      var lb = tiles[i].getAttribute('aria-label') || '', m = /^(.+?)\.\s*Membership cost/i.exec(lb);
-      if (!m || tiles[i].disabled || tiles[i].getAttribute('aria-disabled') === 'true') continue;
-      var nm = m[1].trim(); if ((gd[nm] && gd[nm].strength != null) || gyeTried[nm] || (tr0[nm] && Date.now() - tr0[nm] < 1209600000)) continue;
-      todo.push([nm, tiles[i]]);
-    }
-    if (!todo.length) return;
-    gyeCrawlBusy = true;
-    try {
-      for (i = 0; i < todo.length; i++) {
-        if (Date.now() - gyeAct < 1500 || gyePend) break;
-        gyeTried[todo[i][0]] = 1; tr0[todo[i][0]] = Date.now(); gmSet('gym-tried', tr0); todo[i][1].click();
-        var ok = false, w;
-        for (w = 0; w < 12; w++) { await gyeSleep(250); if (root.querySelector('[class*="gymDetailsWrapper___"] [class*="progressBar___"]')) { ok = true; break; } }
-        if (!ok) break;
-        gyeReadPanel();
-        var bb = gyeBackBtn(); if (!bb) break;
-        bb.click(); await gyeSleep(500);
-        if (root.querySelector('[class*="gymDetailsWrapper___"] [class*="progressBar___"]')) break;
-        tiles = root.querySelectorAll('button[class*="gymButton___"]');
-        if (!tiles.length) break;
-        var lbl = todo[i][0];
-        for (w = i + 1; w < todo.length; w++) { for (var q = 0; q < tiles.length; q++) { var ml = /^(.+?)\.\s*Membership cost/i.exec(tiles[q].getAttribute('aria-label') || ''); if (ml && ml[1].trim() === todo[w][0]) todo[w][1] = tiles[q]; } }
-      }
-    } catch (e) {}
-    gyeCrawlBusy = false;
-  }
+  /* Gym simge verileri resmi API verisinden (torn/gyms); sayfada gym acinca gorunen de kaydedilir. Otomatik tiklama yok. */
   function gyeTick() {
     var old = document.querySelectorAll('.th-gye'), i;
     if (!ui.gye || !/\/gym\.php/i.test(location.pathname)) { for (i = 0; i < old.length; i++) old[i].remove(); return; }
@@ -5670,7 +5639,7 @@
       if (el.textContent !== txt) el.textContent = txt;
     }
   }
-  setInterval(function () { gyeTick(); if (ui.gye && /\/gym\.php/i.test(location.pathname)) gyeCrawl(); }, 1200);
+  setInterval(gyeTick, 1200);
   /* Awards sayfasını gezip (gizli iframe ya da sayfa açıkken) tüm honor/medal ilerlemesini otomatik topla */
   var mtFullBusy = false;
   function mtSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
@@ -6032,7 +6001,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.87';
+  var TH_VER = '1.6.88';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6133,6 +6102,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.88', 'o', ['Gym: Torn kurallarına uyum için gym panellerini otomatik açıp kapatan tarama kaldırıldı. Gym bilgileri artık resmi API verisinden (torn/gyms) alınıyor; açtığın gym de kaydedilmeye devam ediyor.'], ['Gym: removed the automatic opening/closing of gym panels (Torn rules). Gym data now comes from the official API (torn/gyms); gyms you open yourself are still recorded.']],
     ['1.6.87', 'o', ['Merit: ödül listesi artık resmi API verisinden (torn/honors, torn/medals, user/honors, user/medals) alınıyor; ilerleme istatistiklerden hesaplanıyor. Sayfa taraması gerekmiyor.'], ['Merit: awards list now comes from the official API (torn/honors, torn/medals, user/honors, user/medals); progress is computed from stats. No page scan needed.']],
     ['1.6.86', 'o', ['Torn kurallarına uyum: Awards için gizli sayfa açıp otomatik gezme kaldırıldı. Artık yalnızca sen Awards sayfasını açınca, ekranda görünenler kaydediliyor. Teçhizat kaydı da sadece sekme görünürken alınıyor.'], ['Torn rules compliance: removed the hidden-page auto scan for Awards. Now only what is shown while you have the Awards page open is recorded. Loadout capture also only runs while the tab is visible.']],
     ['1.6.85', 'n', ['Teçhizat kaydı yalnızca sekme görünürken alınıyor (Torn kuralı: arka plandaki sayfadan veri çekilmez).'], ['Loadout capture now only runs while the tab is visible (Torn rule: no data from background pages).']],
