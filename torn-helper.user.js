@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.109
+// @version      1.6.110
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.109', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.110', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5822,6 +5822,77 @@
   function thmGo(r) {
     location.assign('https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=' + encodeURIComponent(r[0]) + '&itemName=' + encodeURIComponent(r[1]) + (r[2] ? '&itemType=' + encodeURIComponent(r[2]) : ''));
   }
+  var thmMk = {};
+  function thmFmtStat(d) {
+    if (!d) return '';
+    var st = d.stats || d, o = [];
+    if (st.damage != null) o.push(T('Hasar ', 'Dmg ') + st.damage);
+    if (st.accuracy != null) o.push(T('İsabet ', 'Acc ') + st.accuracy);
+    if (st.armor != null) o.push(T('Zırh ', 'Arm ') + st.armor);
+    if (st.quality != null) o.push('Q ' + st.quality);
+    return o.join(' · ');
+  }
+  function thmBon(d) {
+    var b = d && Array.isArray(d.bonuses) ? d.bonuses : [];
+    return b.map(function (x) { return x ? String(x.title || x.name || x.description || '') + (x.value != null && x.value !== '' ? ' ' + x.value : '') : ''; }).filter(function (z) { return z; });
+  }
+  function thmShow(r) {
+    var pn = document.getElementById('th-thm-pn'); if (!pn) return;
+    var ls = pn.querySelector('.th-thm-l'), adv = /^(Primary|Secondary|Melee|Defensive)$/.test(r[2]), fl = {};
+    pn.setAttribute('data-d', '1'); ls.innerHTML = '';
+    var inpS = 'width:62px;background:#111;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 4px;font:12px Arial,sans-serif;';
+    var hd = document.createElement('div'); hd.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;font-weight:700;';
+    var bk = document.createElement('a'); bk.href = '#'; bk.textContent = '←'; bk.style.cssText = 'color:#fbbf24;text-decoration:none;font-size:15px;';
+    bk.addEventListener('click', function (e) { e.preventDefault(); pn.removeAttribute('data-d'); thmRender(); });
+    var nm = document.createElement('span'); nm.textContent = r[1]; nm.style.flex = '1';
+    var op = document.createElement('a'); op.href = '#'; op.textContent = T('Markette aç', 'Open in market'); op.style.cssText = 'color:#60a5fa;font-size:12px;';
+    op.addEventListener('click', function (e) { e.preventDefault(); thmGo(r); });
+    hd.appendChild(bk); hd.appendChild(nm); hd.appendChild(op); ls.appendChild(hd);
+    if (adv) {
+      var ad = document.createElement('div'); ad.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:12px;font-weight:400;';
+      var fs = r[2] === 'Defensive' ? [['arm', T('Min zırh', 'Min armor')], ['q', T('Min kalite', 'Min quality')]] : [['dmg', T('Min hasar', 'Min damage')], ['acc', T('Min isabet', 'Min accuracy')], ['q', T('Min kalite', 'Min quality')]];
+      fs.forEach(function (f) { var i = document.createElement('input'); i.type = 'number'; i.placeholder = f[1]; i.style.cssText = inpS; i.addEventListener('input', function () { fl[f[0]] = i.value === '' ? null : +i.value; draw(); }); ad.appendChild(i); });
+      var bi = document.createElement('input'); bi.type = 'text'; bi.placeholder = T('Bonus (örn. Cripple)', 'Bonus (e.g. Cripple)'); bi.style.cssText = inpS.replace('width:62px', 'width:140px'); bi.addEventListener('input', function () { fl.bon = bi.value.trim().toLowerCase(); draw(); }); ad.appendChild(bi);
+      ls.appendChild(ad);
+    }
+    var body = document.createElement('div'); ls.appendChild(body);
+    var note = document.createElement('div'); note.style.cssText = 'margin-top:4px;font-size:11px;font-weight:400;color:#9ca3af;'; ls.appendChild(note);
+    var data = null;
+    function draw() {
+      body.innerHTML = '';
+      if (!data) return;
+      var rows = data.filter(function (x) {
+        var st = (x.d && (x.d.stats || x.d)) || {};
+        if (fl.dmg != null && !(Number(st.damage) >= fl.dmg)) return false;
+        if (fl.acc != null && !(Number(st.accuracy) >= fl.acc)) return false;
+        if (fl.arm != null && !(Number(st.armor) >= fl.arm)) return false;
+        if (fl.q != null && !(Number(st.quality) >= fl.q)) return false;
+        if (fl.bon && thmBon(x.d).join(' ').toLowerCase().indexOf(fl.bon) < 0) return false;
+        return true;
+      });
+      if (!rows.length) { body.textContent = T('Uygun ilan yok', 'No matching listing'); return; }
+      rows.slice(0, 5).forEach(function (x) {
+        var d = document.createElement('div'); d.style.cssText = 'padding:4px 6px;margin-bottom:3px;background:#111827;border-radius:3px;cursor:pointer;font-weight:400;font-size:13px;';
+        var bn = thmBon(x.d), sx = thmFmtStat(x.d);
+        d.innerHTML = '<b style="color:#86efac;">$' + Number(x.p).toLocaleString('en-US') + '</b> <span style="color:#9ca3af;">x' + x.a + '</span>' + (sx ? '<div style="font-size:11px;color:#d1d5db;">' + sx + '</div>' : '') + (bn.length ? '<div style="font-size:11px;color:#fbbf24;">' + bn.join(', ') + '</div>' : '');
+        d.addEventListener('click', function () { thmGo(r); });
+        body.appendChild(d);
+      });
+    }
+    function load(force) {
+      var c = thmMk[r[0]];
+      if (c && !force && Date.now() - c.at < 45000) { data = c.l; note.textContent = T('En ucuz ', 'Cheapest ') + data.length + T(' ilan içinden', ' listings searched'); draw(); return; }
+      if (!keyOk()) { body.textContent = T('API anahtarı gerekli', 'API key required'); return; }
+      body.textContent = T('Yükleniyor…', 'Loading…');
+      prApi('market/' + encodeURIComponent(r[0]) + '/itemmarket?limit=100').then(function (j) {
+        var im = j && j.itemmarket; if (!im || !Array.isArray(im.listings)) throw new Error('x');
+        data = im.listings.map(function (x) { return { p: Number(x.price) || 0, a: Number(x.amount) || 0, d: x.item_details || null }; });
+        thmMk[r[0]] = { at: Date.now(), l: data };
+        note.textContent = T('En ucuz ', 'Cheapest ') + data.length + T(' ilan içinden', ' listings searched'); draw();
+      }).catch(function () { body.textContent = T('Piyasa verisi alınamadı', 'Could not load market data'); });
+    }
+    load(false);
+  }
   function thmRender() {
     var pn = document.getElementById('th-thm-pn'); if (!pn) return;
     var q = pn.querySelector('input').value.trim().toLowerCase(), ls = pn.querySelector('.th-thm-l'), l = thmItems();
@@ -5835,7 +5906,7 @@
     hit.slice(0, 30).forEach(function (h) {
       var d = document.createElement('div'); d.textContent = h[2][1] + (h[2][2] ? '  (' + h[2][2] + ')' : ''); d.style.cssText = 'padding:4px 8px;cursor:pointer;border-radius:3px;';
       d.addEventListener('mouseenter', function () { d.style.background = '#374151'; }); d.addEventListener('mouseleave', function () { d.style.background = ''; });
-      d.addEventListener('click', function () { thmGo(h[2]); });
+      d.addEventListener('click', function () { thmShow(h[2]); });
       d.setAttribute('data-first', ''); ls.appendChild(d);
     });
   }
@@ -5847,7 +5918,7 @@
     pn.style.cssText = 'position:fixed;top:48px;right:16px;width:300px;max-width:calc(100vw - 32px);z-index:2147483000;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:8px;font:700 12px Arial,sans-serif;color:#e5e7eb;box-shadow:0 6px 24px rgba(0,0,0,.6);';
     pn.innerHTML = '<div style="margin-bottom:6px;color:#fbbf24;display:flex;justify-content:space-between;align-items:center;"><span>THM · Item Market</span><button id="th-thm-rf" type="button" title="' + T('Eşya listesini şimdi yenile', 'Refresh item list now') + '" style="background:#111;color:#fbbf24;border:1px solid #374151;border-radius:4px;padding:1px 8px;cursor:pointer;font:700 13px Arial,sans-serif;">⟳</button></div><input type="text" placeholder="' + T('Eşya ara…', 'Search item…') + '" style="box-sizing:border-box;width:100%;background:#111;color:#e5e7eb;border:1px solid #374151;border-radius:4px;padding:5px 8px;font:13px Arial,sans-serif;"><div class="th-thm-l" style="margin-top:6px;max-height:320px;overflow:auto;font-weight:400;font-size:13px;"></div>';
     document.body.appendChild(pn);
-    var inp = pn.querySelector('input'); inp.addEventListener('input', thmRender);
+    var inp = pn.querySelector('input'); inp.addEventListener('input', function () { pn.removeAttribute('data-d'); thmRender(); });
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = pn.querySelector('[data-first]'); if (f) f.click(); } else if (e.key === 'Escape') pn.remove(); });
     pn.querySelector('#th-thm-rf').addEventListener('click', function (e) { e.preventDefault(); if (thmBusy || !keyOk()) return; e.target.disabled = true; e.target.textContent = '…'; thmItems(true); });
     inp.focus(); thmRender(); thmItems();
@@ -5855,7 +5926,7 @@
   function thmTick() {
     var ex = document.getElementById('th-thm');
     if (!ui.thm) { if (ex) ex.remove(); var pp = document.getElementById('th-thm-pn'); if (pp) pp.remove(); return; }
-    var pn = document.getElementById('th-thm-pn'); if (pn && thmItems() && pn.querySelector('.th-thm-l').childNodes.length <= 1 && !pn.querySelector('[data-first]')) thmRender();
+    var pn = document.getElementById('th-thm-pn'); if (pn && !pn.getAttribute('data-d') && thmItems() && pn.querySelector('.th-thm-l').childNodes.length <= 1 && !pn.querySelector('[data-first]')) thmRender();
     if (ex) return;
     var tb = document.querySelector('#topHeaderBanner ul.toolbar'), a = document.createElement('a');
     a.id = 'th-thm'; a.href = '#'; a.textContent = 'THM'; a.title = T('Item Market hızlı arama', 'Item Market quick search');
@@ -6249,7 +6320,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.109';
+  var TH_VER = '1.6.110';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6350,6 +6421,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.110', 'o', ['THM: bir eşyaya tıklayınca en ucuz 5 ilan fiyat sırasıyla gösterilir; silah/zırhta min hasar, isabet, zırh, kalite ve bonus ile süzme eklendi. İlana tıklayınca Item Market açılır.'], ['THM: clicking an item shows the 5 cheapest listings by price; weapons/armor can be filtered by min damage, accuracy, armor, quality and bonus. Click a listing to open the Item Market.']],
     ['1.6.109', 'o', ['THM: eşya listesi saatte bir yenilenir; pencerede anında yenile (⟳) düğmesi eklendi.'], ['THM: item list refreshes hourly; added a refresh (⟳) button in the panel.']],
     ['1.6.108', 'n', ['THM esya listesi gunde bir yenilenir.'], ['THM item list refreshes daily.']],
     ['1.6.107', 'n', ['THM esya listesi yenileme suresi 30 gune cikarildi.'], ['THM item list refresh interval raised to 30 days.']],
