@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.110
+// @version      1.6.111
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.110', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.111', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5838,7 +5838,7 @@
   }
   function thmShow(r) {
     var pn = document.getElementById('th-thm-pn'); if (!pn) return;
-    var ls = pn.querySelector('.th-thm-l'), adv = /^(Primary|Secondary|Melee|Defensive)$/.test(r[2]), fl = {};
+    var ls = pn.querySelector('.th-thm-l'), adv = /^(Weapon|Armor|Armour|Primary|Secondary|Melee|Defensive)$/i.test(r[2]), fl = {};
     pn.setAttribute('data-d', '1'); ls.innerHTML = '';
     var inpS = 'width:62px;background:#111;color:#e5e7eb;border:1px solid #374151;border-radius:3px;padding:2px 4px;font:12px Arial,sans-serif;';
     var hd = document.createElement('div'); hd.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;font-weight:700;';
@@ -5850,7 +5850,7 @@
     hd.appendChild(bk); hd.appendChild(nm); hd.appendChild(op); ls.appendChild(hd);
     if (adv) {
       var ad = document.createElement('div'); ad.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:12px;font-weight:400;';
-      var fs = r[2] === 'Defensive' ? [['arm', T('Min zırh', 'Min armor')], ['q', T('Min kalite', 'Min quality')]] : [['dmg', T('Min hasar', 'Min damage')], ['acc', T('Min isabet', 'Min accuracy')], ['q', T('Min kalite', 'Min quality')]];
+      var fs = /^(Armor|Armour|Defensive)$/i.test(r[2]) ? [['arm', T('Min zırh', 'Min armor')], ['q', T('Min kalite', 'Min quality')]] : [['dmg', T('Min hasar', 'Min damage')], ['acc', T('Min isabet', 'Min accuracy')], ['q', T('Min kalite', 'Min quality')]];
       fs.forEach(function (f) { var i = document.createElement('input'); i.type = 'number'; i.placeholder = f[1]; i.style.cssText = inpS; i.addEventListener('input', function () { fl[f[0]] = i.value === '' ? null : +i.value; draw(); }); ad.appendChild(i); });
       var bi = document.createElement('input'); bi.type = 'text'; bi.placeholder = T('Bonus (örn. Cripple)', 'Bonus (e.g. Cripple)'); bi.style.cssText = inpS.replace('width:62px', 'width:140px'); bi.addEventListener('input', function () { fl.bon = bi.value.trim().toLowerCase(); draw(); }); ad.appendChild(bi);
       ls.appendChild(ad);
@@ -6320,7 +6320,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.110';
+  var TH_VER = '1.6.111';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6421,6 +6421,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.111', 'n', ['THM: silah/zirh suzme kutulari Weapon/Armor turu icin de gosterilir.'], ['THM: weapon/armor filter boxes now also appear for the Weapon/Armor item types.']],
     ['1.6.110', 'o', ['THM: bir eşyaya tıklayınca en ucuz 5 ilan fiyat sırasıyla gösterilir; silah/zırhta min hasar, isabet, zırh, kalite ve bonus ile süzme eklendi. İlana tıklayınca Item Market açılır.'], ['THM: clicking an item shows the 5 cheapest listings by price; weapons/armor can be filtered by min damage, accuracy, armor, quality and bonus. Click a listing to open the Item Market.']],
     ['1.6.109', 'o', ['THM: eşya listesi saatte bir yenilenir; pencerede anında yenile (⟳) düğmesi eklendi.'], ['THM: item list refreshes hourly; added a refresh (⟳) button in the panel.']],
     ['1.6.108', 'n', ['THM esya listesi gunde bir yenilenir.'], ['THM item list refreshes daily.']],
