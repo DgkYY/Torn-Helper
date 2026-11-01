@@ -2,7 +2,7 @@
 
 **English** · [Türkçe](#türkçe)
 
-A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.torn.com): target list with quick-attack buttons, Halloween/Mug queue, Ranked War mode, faction management tools and an abroad-price checker. The interface is available in English and Turkish.
+A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.torn.com): target list with quick-attack buttons, Halloween/Mug queue, Ranked War mode, faction management tools, an abroad-price checker, Item Market and chat helpers. The interface is available in English and Turkish.
 
 > Unofficial fan-made tool. Not affiliated with or endorsed by Torn. It reads data through the public Torn API and never attacks, mugs or sends money for you. Every attack is a normal click on your side.
 
@@ -37,7 +37,7 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
 
 - **Torn page helpers** (each can be switched off in Settings; the userscript adds small notes to Torn's own pages)
   - **Sidebar:** Merit Tracker (see below), NPC Loot (time left until Duke, Leslie, Jimmy, Fernando, Tiny and Scrooge reach loot levels 1-5, counted from hospital release; if the release was never seen, an unverified estimate from last action is shown), optional info lines and a collapsible layout.
-  - **Merit Tracker:** shows your merit upgrades, unspent and spent merits, and the honors and medals closest to completion. The award data is collected in the background from the Awards pages, and progress that Torn does not show (flights, finishing hits, defends, criticals, refills, bounties, OC and so on) is calculated from your personal stats through the API. On pages such as Travel, Attack, Gym, Crimes or the Stock Market, a panel under "Links" opens by itself and shows only the awards that relate to that page (on the flight page, every country with the one you picked first).
+  - **Merit Tracker:** shows your merit upgrades, unspent and spent merits, and the honors and medals closest to completion. The award list comes from the official API (honors and medals), and progress that Torn does not show (flights, finishing hits, defends, criticals, refills, bounties, OC and so on) is calculated from your personal stats through the API. On pages such as Travel, Attack, Gym, Crimes or the Stock Market, a panel under "Links" opens by itself and shows only the awards that relate to that page (on the flight page, every country with the one you picked first).
   - **Crimes:** logs average $/nerve and success rate for every option (including Hustling, Disposal per method, Forgery steps, Burglary and others) and shows it under the option name; Pickpocketing targets are colored by your logged success rate; the Hustling Gather Audience nerve is counted in the games it supports. The log can be reset per crime. Item rewards are valued at market value.
   - **Jail:** level, time and FF filters; optional automatic confirmation of the BUST dialog (it spends 5 nerve, so it is off by default).
   - **Profile:** attack history summary between you and the player, Stake out alerts when life drops below your threshold.
@@ -47,12 +47,19 @@ A Tampermonkey userscript that adds a helper panel to [Torn City](https://www.to
   - **Gym:** ready-made Baldr's Ratio and Hank's Ratio targets.
   - **Home page, Battle Stats:** a second panel under Battle Stats with your effective stats including drug, booster and other temporary modifiers (updates when you take a drug or get a debuff).
   - **Missions:** a short summary of what each Duke mission objective asks for; objectives and rewards are translated.
-  - **Gym:** estimated gain for the next train (Vladar formula, calibrated from your last train). Gym dots are read from the gym panel and the API; the script quietly visits each gym once to read its dots (retried after 14 days) and never presses a purchase button.
+  - **Gym:** estimated gain for the next train (Vladar formula, calibrated from your last train). Gym dots come from the official API and from the gym panels you open yourself; the script never opens gym panels on its own and never presses a purchase button.
   - **Company:** a "TRAIN ALL" button above the employee list trains every employee who can be trained, one after another.
   - **Profile:** your age is also shown as years, months and days under the Age box.
   - **Stock Market:** a "$ amount" field above each Buy and Sell box fills in the share count for you (shortcuts like 5m or 250k work).
   - **Merit Tracker extras:** pin awards on top with a star; awards whose target is reached show 100%.
   - **Items, loadout, Item Market and Bazaar:** weapon bonus descriptions written next to the bonus icon; Bazaar items show market price and estimated profit after the 5% fee, and cheap listings are highlighted (not for weapons and armor, whose price depends on stats and bonuses). NPC shop Shop Analyzer shows market price and profit.
+  - **Gym extras:** the page header shows progress and the estimated energy left for the next gym; a "Lock this stat" box under each stat blocks TRAIN while it is locked.
+  - **Sidebar extras:** the Energy/Nerve refill is highlighted when it is ready; your job points are added to the Job/Company tooltip (needs a key with the `user/jobpoints` selection); mini profiles show the player's last action.
+  - **Properties:** market value and happiness on every property, the property you live in outlined green, leases ending within 3 days orange, and a filter by lease days left and status (occupied / leased / empty).
+  - **Quick Market:** a button in the top-right corner opens a small window: type an item name, pick a result and the cheapest listings are shown by price; click one to open it in the Item Market. For weapons and armor you can filter by minimum damage, accuracy, armor and quality, and pick a bonus (the 100 cheapest listings with that bonus are loaded). The item list is fetched through the API once an hour.
+  - **Inventory prices:** on the Items page every item shows the Item Market lowest listing next to its name (market value in grey until it loads), with the total when you own several. For weapons and armor the price is the cheapest listing with the same bonus and at least the same stats, shown with a leading ≥. One API request per visible item, 20 minutes cache. Energy drinks, alcohol (nerve) and candy (happy) show their real value including faction, book and company bonuses.
+  - **Chat:** attack / message / bounty links next to player names; messages containing your chosen words (default: your name) are highlighted and notify when new; **ChatSearch** in the top-right corner searches the messages you have seen (kept only on this device); a Hide / Show chat button; a resize handle on the top-left corner of every chat box (size is remembered); `@name` autocomplete from players seen in that chat (pick with Tab); and in the Trade chat header a timer for the next message (interval is set in Settings). Chat features only read messages that are already on your screen.
+  - **Attack page:** a "Last known equipment" box shows the latest loadout other users of this tool saw for that opponent (see Privacy for the optional shared server); without shared data it falls back to your own local record.
 - **Notifications:** one Settings section where you choose each alert separately (energy, drug, medical, booster, chain, hospital and more), plus sound and a pre-warning.
 - **Settings:** search box, ready-made profiles (Minimal / Full, with Undo), a version indicator with "Check for updates", a health check that tells you if a Torn page change broke one of the features ("Copy report" for bug reports), and the author's contact (YinxYang [3637531] · Discord: _yinyang).
 - **Phone / Torn PDA:** on screens up to 600 px wide the attack mini window shows only energy, target name and status, Attack and Skip; the flight tips panel is compact. Missing `GM_` functions are replaced by built-in fallbacks. Not every feature has been tested inside Torn PDA; please report problems.
@@ -83,8 +90,9 @@ Updates are picked up automatically by Tampermonkey.
 ## Privacy
 
 - Your API keys, target list and settings are stored only in Tampermonkey's own storage on your computer. The Torn page itself cannot read them.
-- Requests go only to `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt` and `tornprobability.com` (only the public OC role weights are requested there). Your Torn key is sent only to Torn, and your FF Scouter key only to FF Scouter.
-- There is no server of our own and no analytics.
+- Requests go only to `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt`, `tornprobability.com` (only the public OC role weights are requested there) and the shared loadout server `torn-helper-server.th-helper.workers.dev`. Your Torn key is sent only to Torn, and your FF Scouter key only to FF Scouter.
+- **Shared loadout server (optional, asks once):** after you save a key you are asked whether to share. If you agree, the loadout of opponents you attack (opponent Torn ID, weapons, armour, level, chain count, attack result and respect) is uploaded and the attack page shows loadouts other users saw. Your identity and API key are never sent. You can turn sharing on or off at any time in the API key section of Settings.
+- No analytics. Chat features only read messages that are already shown on your screen, and the chat search log stays on your device.
 
 ## Data sources and limits
 
@@ -92,7 +100,8 @@ Updates are picked up automatically by Tampermonkey.
 - The Torn side of the abroad comparison is Torn's average market value, not the cheapest current listing.
 - Other players' real battle stats and cash on hand are not available through the API. FF values and networth are estimates and upper bounds.
 - Some faction, organized crime and cooldown fields were implemented from the public API behaviour and are less tested than the rest. If a section looks empty, open the debug box in the Torn connection section and report the response in an issue.
-- Hit-calling shared between faction members is not possible, because there is no shared server.
+- Live hit-calling between faction members is not possible; the shared server only stores opponent loadouts.
+- Quick Market and inventory prices come from Item Market listings at the moment of the request and can be outdated within minutes. The bonus filter of Quick Market relies on the API's bonus parameter; if no listing shows the chosen bonus a warning is displayed.
 - Merit progress read from personal stats, NPC Loot estimates, stock values for item bonuses and the Crimes averages are estimates built from the public API and what Torn shows on the page. Compare them with the real values before relying on them.
 
 ## Backup
@@ -107,7 +116,7 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
 
 # Türkçe
 
-[Torn City](https://www.torn.com) için bir Tampermonkey scripti: hızlı saldırı düğmeli hedef listesi, Halloween/Mug sırası, Ranked War modu, faction yönetim araçları ve yurtdışı fiyat karşılaştırıcı. Arayüz Türkçe ve İngilizce kullanılabilir.
+[Torn City](https://www.torn.com) için bir Tampermonkey scripti: hızlı saldırı düğmeli hedef listesi, Halloween/Mug sırası, Ranked War modu, faction yönetim araçları, yurtdışı fiyat karşılaştırıcı, Item Market ve sohbet yardımcıları. Arayüz Türkçe ve İngilizce kullanılabilir.
 
 > Resmi olmayan, hayran yapımı bir araçtır. Torn ile bağlantısı yoktur. Verileri herkese açık Torn API'si üzerinden okur, senin yerine saldırmaz, mug etmez ve para göndermez. Her saldırı senin normal tıklamandır.
 
@@ -142,7 +151,7 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
 
 - **Torn sayfa yardımcıları** (hepsi Ayarlar'dan kapatılabilir; script Torn'un kendi sayfalarına küçük notlar ekler)
   - **Kenar çubuğu:** Merit Tracker (aşağıda), NPC Loot (Duke, Leslie, Jimmy, Fernando, Tiny ve Scrooge için hastaneden çıkıştan itibaren loot seviyesi 1-5'e kalan süre; çıkış zamanı hiç görülmediyse son aktiviteye göre doğrulanmamış bir tahmin gösterilir), isteğe bağlı bilgi satırları ve katlanabilir yerleşim.
-  - **Merit Tracker:** merit upgrade'lerini, boştaki ve harcanan meritlerini ve tamamlamaya en yakın honor ile medalları gösterir. Ödül verisi arka planda Awards sayfalarından toplanır; Torn'un ilerleme göstermediği ödüllerde (uçuş, finishing hit, defend, critical, refill, bounty, OC vb.) ilerleme API'den kişisel istatistiklerinle hesaplanır. Travel, Attack, Gym, Crimes ya da Borsa gibi sayfalara girince "Bağlantılar" altında bir pencere kendiliğinden açılır ve yalnızca o sayfayla ilgili ödülleri gösterir (uçuş sayfasında seçtiğin ülke en üstte olmak üzere tüm ülkeler).
+  - **Merit Tracker:** merit upgrade'lerini, boştaki ve harcanan meritlerini ve tamamlamaya en yakın honor ile medalları gösterir. Ödül listesi resmi API'den (honor ve medal) gelir; Torn'un ilerleme göstermediği ödüllerde (uçuş, finishing hit, defend, critical, refill, bounty, OC vb.) ilerleme API'den kişisel istatistiklerinle hesaplanır. Travel, Attack, Gym, Crimes ya da Borsa gibi sayfalara girince "Bağlantılar" altında bir pencere kendiliğinden açılır ve yalnızca o sayfayla ilgili ödülleri gösterir (uçuş sayfasında seçtiğin ülke en üstte olmak üzere tüm ülkeler).
   - **Crimes:** her seçenek için ortalama $/nerve ve başarı oranını (Hustling, yönteme göre Disposal, Forgery adımları, Burglary ve diğerleri dahil) kaydedip seçenek adının altında gösterir; Pickpocketing hedefleri kayıtlı başarı oranına göre renklenir; Hustling'in Gather Audience nerve'i desteklediği oyunlara dahil edilir. Kayıt her suç için sıfırlanabilir. Eşya ödülleri piyasa değeriyle hesaplanır.
   - **Hapishane:** seviye, süre ve FF filtresi; BUST onay kutusunu otomatik onaylama seçeneği (5 nerve harcar, bu yüzden varsayılan kapalı).
   - **Profil:** seninle o oyuncu arasındaki saldırı geçmişi özeti, can yüzdesi eşiğin altına inince Stake out uyarısı.
@@ -152,12 +161,19 @@ Found a bug or have an idea? Open an [issue](https://github.com/DgkYY/Torn-Helpe
   - **Gym:** hazır Baldr's Ratio ve Hank's Ratio hedefleri.
   - **Ana sayfa, Battle Stats:** Battle Stats'ın altında ilaç, booster ve diğer geçici etkilerle güncel (efektif) statlarını gösteren ikinci bir pencere (ilaç kullanınca ya da debuff yiyince güncellenir).
   - **Missions:** her Duke görevi için ne istediğinin kısa özeti; hedefler ve ödüller Türkçeye çevrilir.
-  - **Gym:** sıradaki antrenman için tahmini kazanç (Vladar formülü, son antrenmanından kalibre edilir). Gym noktaları gym panelinden ve API'den okunur; script her gym'i bir kez sessizce gezip noktalarını okur (14 gün sonra tekrar dener) ve hiçbir satın alma düğmesine basmaz.
+  - **Gym:** sıradaki antrenman için tahmini kazanç (Vladar formülü, son antrenmanından kalibre edilir). Gym noktaları resmi API'den ve senin kendi açtığın gym panellerinden gelir; script gym panellerini kendiliğinden açmaz ve hiçbir satın alma düğmesine basmaz.
   - **Şirket:** çalışan listesinin üstündeki "HEPSİNİ EĞİT" düğmesi, eğitilebilen her çalışanı sırayla eğitir.
   - **Profil:** Age kutusunun altında yaşın yıl, ay ve gün olarak da yazılır.
   - **Borsa:** her Buy ve Sell kutusunun üstündeki "$ miktar" alanı hisse adedini senin yerine doldurur (5m, 250k gibi kısaltmalar çalışır).
   - **Merit Tracker ekleri:** ödülleri yıldızla üste sabitleme; hedefi tamamlanmış ödüller %100 gösterilir.
   - **Eşyalar, loadout, Item Market ve Bazaar:** silah bonus açıklamaları bonus ikonunun yanında yazılır; Bazaar eşyalarında piyasa fiyatı ve %5 kesintiden sonra tahmini kâr görünür, ucuz ilanlar vurgulanır (fiyatı stat ve bonusa bağlı olan silah ve zırhlarda yapılmaz). NPC mağazalarında Shop Analyzer piyasa fiyatını ve kârı gösterir.
+  - **Gym ekleri:** sayfa başlığında sıradaki gym'e ilerleme ve tahmini kalan enerji yazar; her statın altındaki "Bu statı kilitle" kutusu kilitliyken TRAIN'i engeller.
+  - **Kenar çubuğu ekleri:** Energy/Nerve refill hazır olunca vurgulanır; iş puanların Job/Company ipucuna eklenir (anahtarında `user/jobpoints` seçimi gerekir); mini profillerde oyuncunun son aktiflik zamanı yazar.
+  - **Mülkler:** her mülkte piyasa değeri ve happiness, oturduğun mülk yeşil çerçeveli, kirası 3 gün içinde biten turuncu; kalan kira gününe ve duruma (oturulan / kirada / boş) göre filtre.
+  - **Hızlı Market:** sağ üst köşedeki düğme küçük bir pencere açar: eşya adını yaz, sonuçtan birini seç, en ucuz ilanlar fiyat sırasıyla gelir; birine tıklayınca Item Market'te açılır. Silah ve zırhta en az hasar, isabet, zırh ve kaliteye göre süzme ve bonus seçimi vardır (bonus seçince o bonuslu en ucuz 100 ilan yüklenir). Eşya listesi saatte bir API ile alınır.
+  - **Envanter fiyatları:** Items sayfasında her eşyanın adının yanında Item Market'teki en ucuz ilan fiyatı görünür (yüklenene kadar gri piyasa değeri), birden çoksa toplamıyla. Silah ve zırhta fiyat, aynı bonuslu ve en az aynı statlı en ucuz ilandır ve başında ≥ yazar. Ekranda görünen her eşya için bir API isteği, 20 dk önbellek. Enerji içeceklerinde (E), alkolde (nerve) ve şekerde (happy) faction, kitap ve şirket bonuslu gerçek değer de yazar.
+  - **Sohbet:** oyuncu adlarının yanında saldır / mesaj / ödül bağlantıları; seçtiğin kelimeleri (varsayılan adın) içeren mesajlar vurgulanır ve yeni gelince bildirilir; sağ üstteki **SohbetAra** gördüğün mesajlarda arar (yalnızca bu cihazda tutulur); Sohbeti gizle / göster düğmesi; her sohbet kutusunun sol üst köşesinde boyutlandırma tutamacı (boyut hatırlanır); o sohbette görünen oyunculardan `@isim` tamamlama (Tab ile seç); Takas sohbeti başlığında sıradaki mesaja kalan süre sayacı (aralık Ayarlar'dan). Sohbet özellikleri yalnızca ekranında zaten görünen mesajları okur.
+  - **Saldırı sayfası:** "Bilinen son ekipman" kutusu, bu aracı kullanan diğer oyuncuların o rakipte gördüğü son teçhizatı gösterir (isteğe bağlı ortak sunucu için Gizlilik'e bak); ortak veri yoksa kendi yerel kaydına döner.
 - **Bildirimler:** her uyarıyı ayrı seçtiğin tek bir Ayarlar bölümü (enerji, ilaç, tıbbi, booster, chain, hastane vb.), ayrıca ses ve ön uyarı.
 - **Ayarlar:** arama kutusu, hazır profiller (Sade / Tam, Geri al ile), sürüm göstergesi ve "Güncellemeyi kontrol et", Torn bir sayfayı değiştirip bir özelliği bozarsa haber veren sağlık kontrolü (hata bildirimi için "Raporu kopyala") ve yapımcının iletişim bilgisi (YinxYang [3637531] · Discord: _yinyang).
 - **Telefon / Torn PDA:** 600 px ve altı ekranlarda saldırı mini penceresi yalnızca enerji, hedef adı ve durumu, Saldır ve Atla'yı gösterir; uçuş önerileri paneli kompakttır. Eksik `GM_` fonksiyonları yerleşik yedeklerle karşılanır. Her özellik Torn PDA içinde denenmedi; sorun görürsen bildir.
@@ -188,8 +204,9 @@ Güncellemeleri Tampermonkey kendiliğinden alır.
 ## Gizlilik
 
 - API anahtarların, hedef listen ve ayarların yalnızca bilgisayarındaki Tampermonkey'in kendi deposunda saklanır. Torn sayfasının kendisi bunları okuyamaz.
-- İstekler yalnızca `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt` ve `tornprobability.com` (burada yalnızca herkese açık OC rol ağırlıkları istenir) adreslerine gider. Torn anahtarın yalnızca Torn'a, FF Scouter anahtarın yalnızca FF Scouter'a gönderilir.
-- Kendi sunucumuz ve analiz aracı yoktur.
+- İstekler yalnızca `api.torn.com`, `ffscouter.com`, `api.prombot.co.uk`, `yata.yt`, `tornprobability.com` (burada yalnızca herkese açık OC rol ağırlıkları istenir) ve ortak teçhizat sunucusu `torn-helper-server.th-helper.workers.dev` adreslerine gider. Torn anahtarın yalnızca Torn'a, FF Scouter anahtarın yalnızca FF Scouter'a gönderilir.
+- **Ortak teçhizat sunucusu (isteğe bağlı, bir kez sorar):** anahtarı kaydettikten sonra paylaşıp paylaşmayacağın sorulur. Onaylarsan saldırdığın rakiplerin teçhizatı (rakibin Torn ID'si, silahları, zırhı, seviyesi, zincir sayısı, saldırı sonucu ve respect) yüklenir ve saldırı sayfasında diğer kullanıcıların gördüğü teçhizat görünür. Kimliğin ve API anahtarın hiçbir zaman gönderilmez. Paylaşımı Ayarlar'daki API anahtarı bölümünden istediğin zaman açıp kapatabilirsin.
+- Analiz aracı yoktur. Sohbet özellikleri yalnızca ekranında zaten görünen mesajları okur, sohbet arama kaydı cihazında kalır.
 
 ## Veri kaynakları ve sınırlar
 
@@ -197,7 +214,8 @@ Güncellemeleri Tampermonkey kendiliğinden alır.
 - Yurtdışı karşılaştırmasında Torn tarafı, Torn'un ortalama piyasa değeridir. En ucuz güncel ilan değildir.
 - Diğer oyuncuların gerçek battle stat'ı ve cebindeki nakit API'den alınamaz. FF değerleri ve networth tahmin ve üst sınırdır.
 - Bazı faction, organized crime ve cooldown alanları herkese açık API davranışına göre yazıldı ve diğer bölümlerden daha az test edildi. Bir bölüm boş görünürse Torn bağlantısı bölümündeki hata ayıklama kutusunu açıp yanıtı bir issue'da bildir.
-- Faction üyeleri arasında ortak hit-call yapılamaz, çünkü ortak bir sunucu yoktur.
+- Faction üyeleri arasında canlı hit-call yapılamaz; ortak sunucu yalnızca rakip teçhizatını saklar.
+- Hızlı Market ve envanter fiyatları, istek anındaki Item Market ilanlarından gelir ve dakikalar içinde eskiyebilir. Hızlı Market'in bonus süzmesi API'nin bonus parametresine dayanır; hiçbir ilanda seçilen bonus görünmezse uyarı gösterilir.
 - Kişisel istatistiklerden okunan merit ilerlemesi, NPC Loot tahminleri, eşya bonuslu hisselerin değerleri ve Crimes ortalamaları, herkese açık API'den ve Torn'un sayfada gösterdiğinden üretilmiş tahminlerdir. Güvenmeden önce gerçek değerlerle karşılaştır.
 
 ## Yedek
