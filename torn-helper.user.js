@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.100
+// @version      1.6.101
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.100', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.101', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5687,7 +5687,7 @@
     for (var i = 0; i < bars.length; i++) {
       var el = document.querySelector('[class*="bar___"][class*="' + bars[i][0] + '___"] [class*="barName___"]'); if (!el) continue;
       var on = bars[i][1] === 1, cur = el.getAttribute('data-th-rf') === '1';
-      if (on && !cur) { el.setAttribute('data-th-rf', '1'); el.style.cssText += ';background:#facc15;color:#111;border-radius:3px;padding:0 4px;'; el.title = T('Ücretsiz refill hazır', 'Free refill ready'); }
+      if (on && !cur) { el.setAttribute('data-th-rf', '1'); el.style.cssText += ';background:#facc15;color:#111;border-radius:3px;padding:0 4px;'; el.title = T('Refill hazır', 'Refill ready'); }
       else if (!on && cur) { el.removeAttribute('data-th-rf'); el.style.background = ''; el.style.color = ''; el.style.padding = ''; el.title = ''; }
     }
   }
@@ -6138,7 +6138,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.100';
+  var TH_VER = '1.6.101';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6239,6 +6239,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.101', 'n', ['Refill vurgusu ipucu metni duzeltildi (ucretsiz ibaresi kaldirildi).'], ['Refill highlight tooltip text fixed.']],
     ['1.6.100', 'n', ['Job puani ipucu: API cevap bicimine uyum (companies listesi).'], ['Job points tooltip: matches the real API response shape (companies list).']],
     ['1.6.99', 'n', ['Job puani ipucu: ipucu kutusu ustundeki simgeden bulunuyor.'], ['Job points tooltip: tooltip found via the hovered icon.']],
     ['1.6.98', 'n', ['Job puani ipucu: Torn ipucu kutusu secicisi genisletildi.'], ['Job points tooltip: wider tooltip selector.']],
