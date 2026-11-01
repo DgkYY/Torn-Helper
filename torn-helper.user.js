@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.93
+// @version      1.6.94
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.93', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.94', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6011,7 +6011,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.93';
+  var TH_VER = '1.6.94';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6112,6 +6112,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.94', 'n', ['Crimes: satır yazısı kısaltıldı ("$666/nerve · %50 (8)"), dar satırlarda başarı yüzdesi artık kesilmiyor.'], ['Crimes: shortened the row text ("$666/nerve · 50% (8)") so the success rate is no longer cut off on narrow rows.']],
     ['1.6.93', 'o', ['Saldırı sayfasında artık tek kutu var: "Bilinen son ekipman" (ortak veri). Ortak veri yoksa ya da paylaşım kapalıysa yerel kayıt gösterilir.'], ['The attack page now shows one box: "Last known equipment" (shared data). Falls back to the local record when there is no shared data or sharing is off.']],
     ['1.6.92', 'n', ['Teçhizat kayıtlarına arka planda FF verisi (hesaplanan ve FF Scouter) kaydediliyor; ekranda gösterilmiyor, JSON dışa aktarımında var.'], ['Loadout records now silently store FF data (computed and FF Scouter); not shown on screen, included in the JSON export.']],
     ['1.6.91', 'n', ['Ortak paylaşım: sunucunun hata nedeni durum satırında gösteriliyor.'], ['Shared data: the server error reason is shown in the status line.']],
@@ -6333,7 +6334,7 @@
           ['Cornhole', 'Snail Racing', 'Find the Lady', 'Shell Game'].forEach(function (g) { gn += (data[crime + '|' + g] || {}).n || 0; });
           if (gn && gnv && dd.nv) { nvA = dd.nv + gnv * dd.n / gn; pn = dd.m / nvA; gsh = true; }
         }
-        txt = (dd.nv && (dd.m || dd.dv || dd.em || dd.cd) ? T('ort. ', 'avg ') + (dd.cd && !dd.m && !dd.dv && !dd.em ? Math.round(dd.cd / dd.nv * 10) / 10 + T(' kart', ' cards') : dd.em && !dd.m && !dd.dv ? Math.round(dd.em / dd.nv * 10) / 10 + ' email' : dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + (gsh ? T('/nerve (Gather payı dahil) · ', '/nerve (incl. Gather share) · ') : '/nerve · ') : '') + dd.n + T(' deneme · %', ' tries · ') + Math.round(dd.ok / dd.n * 100) + T(' başarı', '% success') + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
+        txt = (dd.nv && (dd.m || dd.dv || dd.em || dd.cd) ? (dd.cd && !dd.m && !dd.dv && !dd.em ? Math.round(dd.cd / dd.nv * 10) / 10 + T(' kart', ' cards') : dd.em && !dd.m && !dd.dv ? Math.round(dd.em / dd.nv * 10) / 10 + ' email' : dd.dv && !dd.m ? Math.round(dd.dv / dd.nv) + ' DVD' : crmFmt(pn)) + (gsh ? T('/nerve (Gather dahil) · ', '/nerve (incl. Gather) · ') : '/nerve · ') : '') + T('%', '') + Math.round(dd.ok / dd.n * 100) + T('', '%') + ' (' + dd.n + ')' + (dd.it ? ' · +' + dd.it + T(' eşya', ' items') : '');
         dd._pn = pn;
         if (dd.n >= 10 && !(dd.dv && !dd.m) && dd.m && pn > bestV) { bestV = pn; best = ln; }
       }
@@ -6343,7 +6344,7 @@
         var src = da && da.n >= 5 ? da : (dd && dd.n >= 5 ? dd : null), rate = src ? src.ok / src.n : -1;
         if (tt) { tt.style.color = rate < 0 ? '' : rate >= 0.8 ? '#86efac' : rate >= 0.5 ? '#fbbf24' : '#f87171'; tt.title = rate < 0 ? T('Yeterli kayıt yok (en az 5 deneme)', 'Not enough data (5+ tries)') : T('Kayıtlı başarı: %' + Math.round(rate * 100), 'Logged success: ' + Math.round(rate * 100) + '%'); }
       }
-      ln.textContent = txt; ln.style.color = '#9ca3af'; ln.title = T('Kayıtlı denemelerden ortalama kazanç (başarısızlar dahil)', 'Average over recorded attempts (fails included)');
+      ln.textContent = txt; ln.style.color = '#9ca3af'; ln.title = T('Ortalama kazanç/nerve · başarı oranı (deneme sayısı). Kayıtlı denemelerden, başarısızlar dahil.', 'Average gain/nerve · success rate (tries). From recorded attempts, fails included.');
     }
     if (best && bestV > 0) { best.style.color = '#86efac'; best.textContent = '★ ' + best.textContent; }
     var tot = { n: 0, m: 0, nv: 0 };
