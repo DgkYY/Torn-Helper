@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.122
+// @version      1.6.123
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.122', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.123', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5956,16 +5956,27 @@
     var d = (rr.top + rr.height / 2) - (ra.top + ra.height / 2), cur = parseFloat(a.style.top) || 0;
     if (Math.abs(d) > 1 && Math.abs(d) < 60) { a.style.position = 'relative'; a.style.top = (cur + d) + 'px'; }
   }
+  function hdrBox() {
+    var bx = document.getElementById('th-hdr');
+    if (!bx && document.body) {
+      bx = document.createElement('div'); bx.id = 'th-hdr';
+      bx.style.cssText = 'position:fixed;top:4px;right:8px;z-index:2147482000;display:flex;gap:6px;font:700 11px Arial,sans-serif;';
+      document.body.appendChild(bx);
+    }
+    return bx;
+  }
+  function hdrBtn(id, label, title, fn) {
+    var bx = hdrBox(); if (!bx) return;
+    var a = document.createElement('a'); a.id = id; a.href = '#'; a.textContent = label; a.title = title;
+    a.style.cssText = 'padding:2px 8px;color:#fbbf24;background:rgba(17,17,17,.85);border:1px solid #fbbf24;border-radius:4px;text-decoration:none;line-height:16px;';
+    a.addEventListener('click', fn); bx.appendChild(a);
+  }
   function thmTick() {
-    var ex = document.getElementById('th-thm');
+    var ex = document.getElementById('th-thm-a');
     if (!ui.thm) { if (ex) ex.remove(); var pp = document.getElementById('th-thm-pn'); if (pp) pp.remove(); return; }
     var pn = document.getElementById('th-thm-pn'); if (pn && !pn.getAttribute('data-d') && thmItems() && pn.querySelector('.th-thm-l').childNodes.length <= 1 && !pn.querySelector('[data-first]')) thmRender();
     if (ex) return;
-    var tb = document.querySelector('#topHeaderBanner ul.menu-items'), a = document.createElement('a');
-    a.id = 'th-thm-a'; a.href = '#'; a.title = T('Item Market hızlı arama', 'Item Market quick search');
-    a.addEventListener('click', thmToggle);
-    if (tb) { var li = document.createElement('li'); li.id = 'th-thm'; li.className = 'menu-item-link'; a.className = 'menu-item-href'; var sp = document.createElement('span'); sp.className = 'link-text'; sp.textContent = 'THM'; sp.style.cssText = 'color:#fbbf24;font-weight:700;'; a.appendChild(sp); li.appendChild(a); tb.appendChild(li); }
-    else if (document.body) { a.id = 'th-thm'; a.textContent = 'THM'; a.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147482000;padding:4px 8px;font:700 12px Arial,sans-serif;color:#fbbf24;background:#111;border:1px solid #fbbf24;border-radius:4px;text-decoration:none;'; document.body.appendChild(a); }
+    hdrBtn('th-thm-a', 'THM', T('Item Market hızlı arama', 'Item Market quick search'), thmToggle);
   }
   setInterval(thmTick, 1500);
   /* Envanter: esya adinin yanina Item Market fiyati. Duz esya: en ucuz ilan. Silah/zirh: ayni bonuslu ve en az ayni istatistikli en ucuz ilan (>= ile). Ekranda gorunen esyalar, tek tek, 20 dk onbellek. */
@@ -6099,14 +6110,10 @@
     inp.focus(); chsRender();
   }
   function chsTick() {
-    var ex = document.getElementById('th-chs');
+    var ex = document.getElementById('th-chs-a');
     if (!ui.chs) { if (ex) ex.remove(); var pp = document.getElementById('th-chs-pn'); if (pp) pp.remove(); return; }
     if (ex) return;
-    var tb = document.querySelector('#topHeaderBanner ul.menu-items'); if (!tb) return;
-    var li = document.createElement('li'), a = document.createElement('a'), sp = document.createElement('span');
-    li.id = 'th-chs'; li.className = 'menu-item-link'; a.className = 'menu-item-href'; a.href = '#'; a.title = T('Sohbet mesajlarında ara', 'Search chat messages');
-    sp.className = 'link-text'; sp.textContent = T('SohbetAra', 'ChatSearch'); sp.style.cssText = 'color:#fbbf24;font-weight:700;';
-    a.appendChild(sp); a.addEventListener('click', chsToggle); li.appendChild(a); tb.appendChild(li);
+    hdrBtn('th-chs-a', T('SohbetAra', 'ChatSearch'), T('Sohbet mesajlarında ara', 'Search chat messages'), chsToggle);
   }
   setInterval(chsTick, 1500);
   function gyeTick() {
@@ -6494,7 +6501,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.122';
+  var TH_VER = '1.6.123';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6595,6 +6602,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.123', 'n', ['THM ve SohbetAra dugmeleri sayfanin sag ust kosesine sabitlendi (ust cubuk satirini artik bozmaz).'], ['THM and ChatSearch buttons are pinned to the top-right corner (they no longer disturb the top bar row).']],
     ['1.6.122', 'o', ['Yeni: Sohbet araçları. Oyuncu adının yanında saldır/mesaj/ödül bağlantıları, seçtiğin kelimeler (varsayılan adın) geçen mesajlar vurgulanır ve yeni gelince bildirim verilir, üst çubukta SohbetAra ile görülen mesajlarda arama yapılır.'], ['New: chat tools. Attack/message/bounty links next to player names, messages containing your chosen words (default your name) are highlighted and notify when new, and ChatSearch in the top bar searches seen messages.']],
     ['1.6.121', 'n', ['THM dugmesi ust cubukta Wiki Rules Forums satirina tasindi (arama kutusu satiri kayma sorunu giderildi).'], ['THM button moved to the Wiki/Rules/Forums row (fixes the search row being pushed down).']],
     ['1.6.120', 'o', ['Envanterde silah ve zırhta fiyat artık bonus ve istatistiğe göre: aynı bonuslu ve en az aynı hasar/isabet (zırhta zırh değeri) olan en ucuz Item Market ilanı, başında ≥ ile.'], ['Inventory weapon and armor prices now consider bonus and stats: the cheapest Item Market listing with the same bonus and at least the same damage/accuracy (armor value for armor), shown with a leading ≥.']],
