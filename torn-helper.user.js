@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.114
+// @version      1.6.115
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.114', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.115', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5813,7 +5813,7 @@
       thmBusy = 1;
       prApi('torn?selections=items').then(function (j) {
         var it = j && j.items, l = [];
-        if (it) { var arr = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr.forEach(function (x) { if (x && x.name && x.id != null) l.push([String(x.id), String(x.name), String(x.type || '')]); }); }
+        if (it) { var arr = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr.forEach(function (x) { if (x && x.name && x.id != null) l.push([String(x.id), String(x.name), String(x.type || ''), String(x.sub_type || (x.details && x.details.sub_type) || '')]); }); }
         if (l.length) gmSet('thm-items', { at: Date.now(), l: l });
       }).catch(function () { if (c) gmSet('thm-items', { at: Date.now() - 3000000, l: c.l }); }).then(function () { thmBusy = 0; var rb = document.getElementById('th-thm-rf'); if (rb) { rb.disabled = false; rb.textContent = '⟳'; } thmRender(); });
     }
@@ -5823,7 +5823,9 @@
     location.assign('https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=' + encodeURIComponent(r[0]) + '&itemName=' + encodeURIComponent(r[1]) + (r[2] ? '&itemType=' + encodeURIComponent(r[2]) : ''));
   }
   var thmMk = {};
-  var THM_BW = ['Achilles', 'Assassinate', 'Backstab', 'Berserk', 'Bleed', 'Blindfire', 'Blindside', 'Bloodlust', 'Burn', 'Comeback', 'Conserve', 'Cripple', 'Crusher', 'Cupid', 'Deadeye', 'Deadly', 'Disarm', 'Double Tap', 'Double-edged', 'Empower', 'Eviscerate', 'Execute', 'Expose', 'Finale', 'Focus', 'Frenzy', 'Fury', 'Grace', 'Hazardous', 'Home run', 'Irradiate', 'Lacerate', 'Motivation', 'Paralyzed', 'Parry', 'Penetrate', 'Plunder', 'Poison', 'Powerful', 'Proficience', 'Puncture', 'Quicken', 'Rage', 'Revitalize', 'Roshambo', 'Slow', 'Smash', 'Smurf', 'Specialist', 'Spray', 'Stricken', 'Stun', 'Suppress', 'Sure Shot', 'Throttle', 'Toxin', 'Warlord', 'Weaken', 'Wind-up', 'Wither'];
+  var THM_BM = ['Achilles', 'Assassinate', 'Backstab', 'Berserk', 'Bleed', 'Bloodlust', 'Crusher', 'Cupid', 'Deadeye', 'Disarm', 'Double-edged', 'Empower', 'Eviscerate', 'Expose', 'Frenzy', 'Fury', 'Grace', 'Home run', 'Irradiate', 'Lacerate', 'Motivation', 'Parry', 'Penetrate', 'Plunder', 'Powerful', 'Puncture', 'Quicken', 'Rage', 'Roshambo', 'Shock', 'Slow', 'Smash', 'Stun', 'Throttle', 'Toxin', 'Weaken', 'Wind-up', 'Wither'];
+  var THM_BP = ['Achilles', 'Assassinate', 'Bleed', 'Blindfire', 'Blindside', 'Comeback', 'Conserve', 'Cripple', 'Cupid', 'Deadeye', 'Deadly', 'Disarm', 'Eviscerate', 'Expose', 'Focus', 'Freeze', 'Motivation', 'Penetrate', 'Powerful', 'Proficience', 'Puncture', 'Quicken', 'Revitalize', 'Slow', 'Smurf', 'Specialist', 'Spray', 'Stun', 'Suppress', 'Sure Shot', 'Throttle', 'Warlord', 'Weaken', 'Wither'];
+  var THM_BS = ['Achilles', 'Assassinate', 'Bleed', 'Blindside', 'Burn', 'Comeback', 'Conserve', 'Cripple', 'Cupid', 'Deadeye', 'Deadly', 'Disarm', 'Double Tap', 'Eviscerate', 'Execute', 'Expose', 'Finale', 'Motivation', 'Paralyze', 'Poison', 'Powerful', 'Proficience', 'Quicken', 'Revitalize', 'Shock', 'Slow', 'Specialist', 'Stricken', 'Stun', 'Throttle', 'Warlord', 'Wither'];
   var THM_BA = ['Impassable', 'Impenetrable', 'Imperviable', 'Impregnable', 'Insurmountable', 'Invulnerable', 'Immutable', 'Kinetic'];
   function thmFmtStat(d) {
     if (!d) return '';
@@ -5854,10 +5856,12 @@
       var ad = document.createElement('div'); ad.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:12px;font-weight:400;';
       var fs = /^(Armor|Armour|Defensive)$/i.test(r[2]) ? [['arm', T('Min zırh', 'Min armor')], ['q', T('Min kalite', 'Min quality')]] : [['dmg', T('Min hasar', 'Min damage')], ['acc', T('Min isabet', 'Min accuracy')], ['q', T('Min kalite', 'Min quality')]];
       fs.forEach(function (f) { var i = document.createElement('input'); i.type = 'number'; i.placeholder = f[1]; i.style.cssText = inpS; i.addEventListener('input', function () { fl[f[0]] = i.value === '' ? null : +i.value; draw(); }); ad.appendChild(i); });
-      var isArm = /^(Armor|Armour|Defensive)$/i.test(r[2]), bl = isArm ? THM_BA : THM_BW, bi = document.createElement('select');
+      var isArm = /^(Armor|Armour|Defensive)$/i.test(r[2]), sb = String(r[3] || r[2]).toLowerCase(), bw = sb === 'melee' ? THM_BM : sb === 'primary' ? THM_BP : sb === 'secondary' ? THM_BS : Array.from(new Set(THM_BM.concat(THM_BP, THM_BS))).sort(), bl = isArm ? THM_BA : bw, bi = document.createElement('select');
       bi.style.cssText = inpS.replace('width:62px', 'width:140px');
-      bi.innerHTML = '<option value="">' + T('Bonus: hepsi', 'Bonus: any') + '</option>' + bl.map(function (z) { return '<option value="' + z + '">' + z + '</option>'; }).join('');
-      bi.addEventListener('change', function () { fl.bon = bi.value; load(false); }); ad.appendChild(bi);
+      bi.innerHTML = '<option value="">' + T('Bonus: hepsi', 'Bonus: any') + '</option>' + bl.map(function (z) { return '<option value="' + z + '">' + z + '</option>'; }).join('') + '<option value="__o">' + T('Diğer (yaz)…', 'Other (type)…') + '</option>';
+      var bo = document.createElement('input'); bo.type = 'text'; bo.placeholder = T('Bonus adı', 'Bonus name'); bo.style.cssText = inpS.replace('width:62px', 'width:110px') + 'display:none;'; var bt = 0;
+      bo.addEventListener('input', function () { clearTimeout(bt); bt = setTimeout(function () { fl.bon = bo.value.trim(); if (fl.bon) load(false); }, 600); });
+      bi.addEventListener('change', function () { if (bi.value === '__o') { bo.style.display = ''; bo.focus(); fl.bon = bo.value.trim(); } else { bo.style.display = 'none'; fl.bon = bi.value; } load(false); }); ad.appendChild(bi); ad.appendChild(bo);
       ls.appendChild(ad);
     }
     var body = document.createElement('div'); ls.appendChild(body);
@@ -6337,7 +6341,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.114';
+  var TH_VER = '1.6.115';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6438,6 +6442,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.115', 'n', ['THM: Melee, Primary ve Secondary icin gercek bonus listeleri; listede olmayan bonus icin Diger (yaz) secenegi.'], ['THM: real bonus lists for Melee, Primary and Secondary; an Other (type) option for any bonus not listed.']],
     ['1.6.114', 'o', ['THM: bonus artık açılır listeden seçilir; bonus seçilince API o bonuslu en ucuz 100 ilanı getirir ve fiyata göre sıralar.'], ['THM: bonus is now picked from a dropdown; picking one loads the 100 cheapest listings with that bonus, sorted by price.']],
     ['1.6.113', 'n', ['THM dugmesi ust cubugun yuksekligini degistirmez (sayfa asagi kaymasi giderildi).'], ['THM button no longer changes the top bar height (page no longer shifts down).']],
     ['1.6.112', 'n', ['THM dugmesi ust cubuktaki diger simgelerle ayni hizaya otomatik oturtulur.'], ['THM button auto-aligns vertically with the other top-bar icons.']],
