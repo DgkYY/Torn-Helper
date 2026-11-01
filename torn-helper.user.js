@@ -4365,10 +4365,10 @@
     if (!/item\.php/.test(location.pathname)) return;
     var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
     var els = root.querySelectorAll('li[data-item]'), books = [], i;
-    for (i = 0; i < els.length; i++) { var nm0 = els[i].querySelector('.name-wrap .name') || els[i].querySelector('.name'); if (nm0 && /^\s*book\s*:/i.test(nm0.textContent || '')) books.push([els[i], nm0]); }
-    if (!books.length) return;
-    var fx = gmGet('book-fx', null);
-    if (!fx && keyOk() && Date.now() - bkxTry > 600000) { bkxTry = Date.now(); thmItems(true); }
+    var fx = gmGet('book-fx', null), mm = fx && fx.m ? fx.m : {};
+    for (i = 0; i < els.length; i++) { var nm0 = els[i].querySelector('.name-wrap .name') || els[i].querySelector('.name'); if (!nm0) continue; var nk = bkxKey(nm0.textContent || ''); if (/^\s*book\s*:/i.test(nm0.textContent || '') || mm[nk]) books.push([els[i], nm0]); }
+    if (!books.length && fx && fx.v === 2) return;
+    if ((!fx || fx.v !== 2) && keyOk() && Date.now() - bkxTry > 600000) { bkxTry = Date.now(); thmItems(true); }
     var m = fx && fx.m ? fx.m : {};
     books.forEach(function (z) {
       var en = m[bkxKey(z[1].textContent || '')], ex = z[0].querySelector('.th-bkx');
@@ -5868,7 +5868,7 @@
         var it = j && j.items, l = [];
         if (it) { var arr = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr.forEach(function (x) { if (x && x.name && x.id != null) l.push([String(x.id), String(x.name), String(x.type || ''), String(x.sub_type || (x.details && x.details.sub_type) || '')]); }); }
         var bkm = {};
-        if (it) { (Array.isArray(it) ? it : Object.keys(it).map(function (k) { return it[k]; })).forEach(function (x) { if (x && x.name && typeof x.effect === 'string' && x.effect && (/^\s*book\s*:/i.test(x.name) || /book/i.test(String(x.type || '')))) bkm[bkxKey(x.name)] = x.effect; }); gmSet('book-fx', { at: Date.now(), m: bkm }); }
+        if (it) { (Array.isArray(it) ? it : Object.keys(it).map(function (k) { return it[k]; })).forEach(function (x) { if (x && x.name && typeof x.effect === 'string' && x.effect && (/^\s*book\s*:/i.test(x.name) || /book|enhancer/i.test(String(x.type || '')))) bkm[bkxKey(x.name)] = x.effect; }); gmSet('book-fx', { at: Date.now(), v: 2, m: bkm }); }
         var mvm = {};
         if (it) { var arr2 = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr2.forEach(function (x) { if (!x || x.id == null) return; var mv = Number(x.market_value) || Number(x.value && typeof x.value === 'object' ? (x.value.market_price || x.value.market_value) : x.value) || 0; if (mv > 0) mvm[String(x.id)] = mv; }); }
         if (Object.keys(mvm).length) gmSet('thm-mv', mvm);
@@ -6796,7 +6796,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
-    ['1.7.02', 'o', ['Items sayfasi: kitaplarin yanina kisa etki ozeti (Torn API esya aciklamasindan; bilinen kaliplar Turkce, digerleri Ingilizce, uzerine gelince tam metin).'], ['Items page: a short effect summary next to each book (from the Torn API item effect text; full text on hover).']],
+    ['1.7.02', 'o', ['Items sayfasi: kitaplarin ve Enhancer esyalarinin yanina kisa etki ozeti (Torn API esya aciklamasindan; bilinen kaliplar Turkce, digerleri Ingilizce, uzerine gelince tam metin).'], ['Items page: a short effect summary next to each book and enhancer (from the Torn API item effect text; full text on hover).']],
     ['1.7.01', 'o', ['Items sayfasi: alkolde nerve, sekerde happy miktari taban ve faction/kitap/sirket bonuslariyla gercek degeriyle gosteriliyor (enerji iceceklerindeki gibi; adet varsa toplam).'], ['Items page: alcohol shows nerve and candy shows happy, base and real value with faction/book/company bonuses (like energy drinks; total when you own several).']],
     ['1.7.0', 'o', ['THM düğmesinin adı Hızlı Market oldu. Sohbet özellikleri (gizle, boyutlandırma, @ ile isim tamamlama, takas sayacı) ve Item Market araçları bu sürümde bir arada.'], ['The THM button is now called Quick Market. Chat features (hide, resize, @name autocomplete, trade timer) and the Item Market tools ship together in this release.']],
     ['1.6.126', 'o', ['Sohbet: ustte Sohbeti gizle / goster dugmesi; kutularin sol ust kosesinden surukleyerek boyutlandirma (boyut hatirlanir); mesaj yazarken @ ile baslayan ismi sohbette gorunen oyunculardan Tab ile tamamlama; Takas sohbeti basliginda bir sonraki mesaja kalan sure sayaci (aralik ayarlardan).'], ['Chat: Hide / Show chat button in the top bar; resize chat boxes by dragging the top-left corner (size is remembered); @name autocomplete with Tab from players seen in the chat; Trade chat header timer showing time left until the next message (interval in settings).']],
