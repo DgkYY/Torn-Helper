@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.97
+// @version      1.6.98
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.97', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.98', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5734,7 +5734,7 @@
   }
   function jptTick() {
     if (!ui.jpt) return;
-    var cs = document.querySelectorAll('[class*="tooltip"]'), hit = [];
+    var cs = document.querySelectorAll('[class*="ooltip"], [role="tooltip"]'), hit = [];
     for (var i = 0; i < cs.length; i++) { var e = cs[i], t = (e.textContent || '').replace(/\s+/g, ' ').trim(); if (t.length < 200 && /^(Company|Job)/.test(t) && !e.querySelector('.th-jpt')) hit.push(e); }
     if (!hit.length) return;
     var d = jptData(); if (!d) return;
@@ -5743,7 +5743,7 @@
       for (var m = 0; m < hit.length; m++) if (m !== k && el.contains(hit[m])) inner = true;
       if (inner) continue;
       var tx = (el.textContent || '').replace(/\s+/g, ' ').trim(), pts = null, comps = d.companies || {};
-      for (var id in comps) { var cn = comps[id] && comps[id].name; if (cn && tx.indexOf(cn) >= 0) { pts = comps[id].points; break; } }
+      for (var id in comps) { var cn = comps[id] && comps[id].name; if (cn && tx.indexOf(cn) >= 0) { pts = comps[id].points; if (pts === undefined) pts = comps[id].job_points; break; } }
       if (pts === null && d.jobs) for (var jn in d.jobs) if (new RegExp('\\b' + jn + '\\b', 'i').test(tx)) { pts = d.jobs[jn]; break; }
       if (pts === null || pts === undefined) continue;
       var sp = document.createElement('div'); sp.className = 'th-jpt'; sp.style.cssText = 'color:#fbbf24;font-weight:700;'; sp.textContent = T('İş puanı: ', 'Job points: ') + pts; el.appendChild(sp);
@@ -6135,7 +6135,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.97';
+  var TH_VER = '1.6.98';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6236,6 +6236,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.98', 'n', ['Job puani ipucu: Torn ipucu kutusu secicisi genisletildi.'], ['Job points tooltip: wider tooltip selector.']],
     ['1.6.97', 'o', ['Yeni: Kenar çubuğunda Job/Company ipucuna iş puanın eklendi.'], ['New: your job points are added to the sidebar Job/Company tooltip.']],
     ['1.6.96', 'o', ['Yeni: Gym ekranında her statın altında "Bu statı kilitle" kutusu (kilitliyse TRAIN çalışmaz); kenar çubuğunda hazır Energy/Nerve refill için bar adı vurgusu; mini profilde son aktif olma zamanı.'], ['New: a "Lock this stat" box under each gym stat (TRAIN is blocked when locked); sidebar highlight for ready Energy/Nerve refill; last action time in mini profiles.']],
     ['1.6.95', 'o', ['Gym: sayfanın üstüne sıradaki gym için ilerleme ve kalan enerji tahmini eklendi (örnek: The Edge · %45 · 38,040/84,535 E · kalan ≈ 46,495 E).'], ['Gym: the page header now shows progress and estimated energy left for the next gym (e.g. The Edge · 45% · 38,040/84,535 E · left ≈ 46,495 E).']],
