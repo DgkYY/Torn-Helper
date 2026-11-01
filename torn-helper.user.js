@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.0
+// @version      1.7.01
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.0', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.01', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4254,7 +4254,7 @@
   var gybBusy = false, GYB_SRC = { faction_perks: ['fraksiyon', 'faction'], education_perks: ['eğitim', 'education'], property_perks: ['mülk', 'property'], job_perks: ['iş', 'job'], book_perks: ['kitap', 'book'], stock_perks: ['hisse', 'stock'], merit_perks: ['merit', 'merit'], enhancer_perks: ['enhancer', 'enhancer'], faction: ['fraksiyon', 'faction'], education: ['eğitim', 'education'], property: ['mülk', 'property'] };
   async function gybLoad() {
     var c = gmGet('gym-perks2', null);
-    if (gybBusy || !keyOk() || (c && c.en && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
+    if (gybBusy || !keyOk() || (c && c.en && c.x && Date.now() - c.at < 3600000) || (c && c.fail && Date.now() - c.fail < 600000)) return;
     gybBusy = true;
     try {
       var out = [], seen = {};
@@ -4275,9 +4275,10 @@
       try { var ju = await prApi('faction/upgrades'); if (ju && !ju.error) walk(ju, 'faction_perks', 0); } catch (e2) {}
       var gm = out.filter(function (x) { return /%/.test(x[1]) && /gym|steadfast|strength|defense|speed|dexterity/i.test(x[1]); });
       var en = out.filter(function (x) { return /energy (drink|can)/i.test(x[1]) && !/cooldown/i.test(x[1]); });
-      gmSet('gym-perks2', { at: Date.now(), en: en, d: gm, n: out.length, all: out.map(function (x) { return x[0] + ': ' + x[1]; }).slice(0, 80) });
+      var xx = out.filter(function (x) { return /energy (drink|can)|alcohol|candy/i.test(x[1]) && !/cool ?down/i.test(x[1]); });
+      gmSet('gym-perks2', { at: Date.now(), en: en, x: xx, d: gm, n: out.length, all: out.map(function (x) { return x[0] + ': ' + x[1]; }).slice(0, 80) });
       try { console.log('[torn-helper] gym perks', gm, out.length); } catch (e3) {}
-    } catch (e) { gmSet('gym-perks2', { at: (c && c.at) || 0, d: c && c.d, en: (c && c.en) || [], fail: Date.now(), err: String((e && e.message) || e) }); }
+    } catch (e) { gmSet('gym-perks2', { at: (c && c.at) || 0, d: c && c.d, en: (c && c.en) || [], fail: Date.now(), err: String((e && e.message) || e), x: (c && c.x) || [] }); }
     gybBusy = false;
   }
   function gybFor(stat) {
@@ -4297,30 +4298,38 @@
   }
   /* Esya sayfasi: enerji icecekleri icin bonuslu E (taban degerler Torn wiki) */
   var ENR = { 'goose juice': 5, 'damp valley': 10, 'crocozade': 15, 'munster': 20, 'santa shooters': 20, 'red cow': 25, 'rockstar rudolph': 25, 'taurine elite': 30, 'x-mass': 30 };
-  function enrMult() {
-    var c = gmGet('gym-perks2', null), m = 1, by = [];
-    ((c && c.en) || []).forEach(function (x) {
+  /* Alkol (nerve) ve seker (happy) taban degerleri: Torn wiki */
+  var ALC = { 'bottle of beer': 1, 'bottle of champagne': 1, 'bottle of sake': 1, 'bottle of tequila': 1, 'bottle of kandy kane': 2, 'bottle of pumpkin brew': 2, 'glass of beer': 2, 'bottle of christmas cocktail': 3, 'bottle of minty mayhem': 3, 'bottle of wicked witch': 3, 'bottle of mistletoe madness': 4, 'bottle of stinky swamp punch': 4, 'bottle of christmas spirit': 5, 'bottle of green stout': 5, 'bottle of moonshine': 5 };
+  var CND = { 'box of bon bons': 25, 'box of chocolate bars': 25, 'bag of bon bons': 25, 'bag of chocolate kisses': 25, 'box of sweet hearts': 25, 'lollipop': 25, 'box of extra strong mints': 25, 'big box of chocolate bars': 35, 'bag of candy kisses': 50, 'chocolate egg': 50, 'bag of bloody eyeballs': 75, 'bag of tootsie rolls': 75, 'bag of reindeer droppings': 100, 'bag of chocolate truffles': 100, 'bag of sherbet': 150, 'bag of humbugs': 150, 'pixie sticks': 150, 'jawbreaker': 150, 'birthday cupcake': 250 };
+  var ENR_RE = { e: /energy (drink|can)/i, a: /alcohol/i, c: /candy/i };
+  function enrMult(cat) {
+    var c = gmGet('gym-perks2', null), m = 1, by = [], list = ((c && (c.x || c.en)) || []), re = ENR_RE[cat || 'e'];
+    list.forEach(function (x) {
+      if (!re.test(x[1]) || /cool ?down/i.test(x[1])) return;
       var pc = /(\d+(?:\.\d+)?)\s*%/.exec(x[1]), f = pc ? 1 + Number(pc[1]) / 100 : (/doubl|2x|x2/i.test(x[1]) ? 2 : 1);
       if (f === 1) return;
       m *= f; var sn = GYB_SRC[x[0]] ? T(GYB_SRC[x[0]][0], GYB_SRC[x[0]][1]) : T('diğer', 'other');
       by.push(sn + ' ×' + Math.round(f * 100) / 100);
     });
-    return { m: m, by: by, ok: !!(c && c.en) };
+    if (cat === 'c') { var d = new Date(); if (d.getUTCMonth() === 10 && d.getUTCDate() >= 13 && d.getUTCDate() <= 15) { m *= 3; by.push(T('etkinlik ×3', 'event ×3')); } }
+    return { m: m, by: by, ok: !!(c && (c.x || c.en)) };
   }
   function enrTick() {
     if (!/item\.php/.test(location.pathname)) return;
     var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
     gybLoad();
-    var mu = enrMult(), sig = mu.m + '|' + mu.by.join(',');
+    var mus = { e: enrMult('e'), a: enrMult('a'), c: enrMult('c') };
     var els = root.querySelectorAll('li[data-item]');
     for (var i = 0; i < els.length; i++) {
       var li = els[i], nmEl = li.querySelector('.name-wrap .name') || li.querySelector('.name');
-      var key = nmEl ? (nmEl.textContent || '').replace(/^\s*Can of\s+/i, '').trim().toLowerCase() : '', base = ENR[key];
+      var raw = nmEl ? (nmEl.textContent || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase() : '', key = raw.replace(/^can of\s+/, ''), base = ENR[key], cat = 'e', ic = '⚡', un = ' E';
+      if (!base && ALC[raw]) { base = ALC[raw]; cat = 'a'; ic = '🍺'; un = T(' nerve', ' nerve'); }
+      else if (!base && CND[raw]) { base = CND[raw]; cat = 'c'; ic = '😊'; un = T(' happy', ' happy'); }
       var ex = li.querySelector('.th-enr');
       if (!base) { if (ex) ex.remove(); continue; }
-      var q = Number(li.getAttribute('data-qty')) || 1;
+      var mu = mus[cat], q = Number(li.getAttribute('data-qty')) || 1;
       var tot = Math.round(base * mu.m * 100) / 100;
-      var txt = '⚡ ' + base + (mu.m !== 1 ? ' → ' + tot : '') + ' E' + (q > 1 ? ' (×' + q + ' = ' + Math.round(tot * q * 100) / 100 + ')' : '') + (mu.by.length ? ' [' + mu.by.join(', ') + ']' : (mu.ok ? '' : ' …'));
+      var txt = ic + ' ' + base + (mu.m !== 1 ? ' → ' + tot : '') + un + (q > 1 ? ' (×' + q + ' = ' + Math.round(tot * q * 100) / 100 + ')' : '') + (mu.by.length ? ' [' + mu.by.join(', ') + ']' : (mu.ok ? '' : ' …'));
       if (ex && ex.getAttribute('data-s') === txt) continue;
       if (!ex) {
         ex = document.createElement('span'); ex.className = 'th-enr';
@@ -6640,7 +6649,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.0';
+  var TH_VER = '1.7.01';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6741,6 +6750,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.01', 'o', ['Items sayfasi: alkolde nerve, sekerde happy miktari taban ve faction/kitap/sirket bonuslariyla gercek degeriyle gosteriliyor (enerji iceceklerindeki gibi; adet varsa toplam).'], ['Items page: alcohol shows nerve and candy shows happy, base and real value with faction/book/company bonuses (like energy drinks; total when you own several).']],
     ['1.7.0', 'o', ['THM düğmesinin adı Hızlı Market oldu. Sohbet özellikleri (gizle, boyutlandırma, @ ile isim tamamlama, takas sayacı) ve Item Market araçları bu sürümde bir arada.'], ['The THM button is now called Quick Market. Chat features (hide, resize, @name autocomplete, trade timer) and the Item Market tools ship together in this release.']],
     ['1.6.126', 'o', ['Sohbet: ustte Sohbeti gizle / goster dugmesi; kutularin sol ust kosesinden surukleyerek boyutlandirma (boyut hatirlanir); mesaj yazarken @ ile baslayan ismi sohbette gorunen oyunculardan Tab ile tamamlama; Takas sohbeti basliginda bir sonraki mesaja kalan sure sayaci (aralik ayarlardan).'], ['Chat: Hide / Show chat button in the top bar; resize chat boxes by dragging the top-left corner (size is remembered); @name autocomplete with Tab from players seen in the chat; Trade chat header timer showing time left until the next message (interval in settings).']],
     ['1.6.125', 'n', ['Kullanici scripti yazar bilgisi GitHub adi olan DgkYY olarak guncellendi.'], ['Userscript author field updated to the GitHub name DgkYY.']],
