@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.02
+// @version      1.7.03
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.02', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.03', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6695,7 +6695,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.02';
+  var TH_VER = '1.7.03';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6796,6 +6796,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.03', 'n', ['Ceviri kontrolu yapildi, eksik ya da hatali ceviri bulunmadi.'], ['Translation review done; no missing or wrong translations found.']],
     ['1.7.02', 'o', ['Items sayfasi: kitaplarin ve Enhancer esyalarinin yanina kisa etki ozeti (Torn API esya aciklamasindan; bilinen kaliplar Turkce, digerleri Ingilizce, uzerine gelince tam metin).'], ['Items page: a short effect summary next to each book and enhancer (from the Torn API item effect text; full text on hover).']],
     ['1.7.01', 'o', ['Items sayfasi: alkolde nerve, sekerde happy miktari taban ve faction/kitap/sirket bonuslariyla gercek degeriyle gosteriliyor (enerji iceceklerindeki gibi; adet varsa toplam).'], ['Items page: alcohol shows nerve and candy shows happy, base and real value with faction/book/company bonuses (like energy drinks; total when you own several).']],
     ['1.7.0', 'o', ['THM düğmesinin adı Hızlı Market oldu. Sohbet özellikleri (gizle, boyutlandırma, @ ile isim tamamlama, takas sayacı) ve Item Market araçları bu sürümde bir arada.'], ['The THM button is now called Quick Market. Chat features (hide, resize, @name autocomplete, trade timer) and the Item Market tools ship together in this release.']],
