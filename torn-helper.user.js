@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.92
+// @version      1.6.93
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.92', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.93', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5349,6 +5349,7 @@
     }
     var r = db[id], hd = document.querySelector('[class*="appHeaderWrapper"]');
     if (!r || !hd) { if (old) old.remove(); return; }
+    if (shrOn()) { var ce0 = (gmGet('shr-c', {}) || {})[id]; if (ce0 && ce0.d && ce0.d.consensus) { if (old) old.remove(); return; } }
     var sg = r.t + '|' + T('t', 'e') + '|' + Math.floor(Date.now() / 60000);
     if (old && old.getAttribute('data-s') === sg && old.previousSibling === hd) return;
     if (old) old.remove();
@@ -5429,7 +5430,7 @@
     var lab = { m: T('Ana', 'Pri'), s: T('Yan', 'Sec'), e: T('Yakın', 'Melee'), t: T('Geçici', 'Temp') }, parts = [];
     ['m', 's', 'e', 't'].forEach(function (k) { var x = cs.w[k]; if (!x) return; parts.push(lab[k] + ': ' + String(x.n) + (x.d ? ' (' + x.d + '/' + x.a + ')' : '') + (x.b && x.b.length ? ' [' + x.b.join(', ') + ']' : '')); });
     var lv = d.latest && d.latest.level, h = document.createElement('div'); h.style.cssText = 'font-weight:700;color:#38bdf8;';
-    h.textContent = T('Ortak veri', 'Shared data') + ' · ' + cs.agree + '/' + cs.of + T(' rapor aynı', ' reports agree') + (lv ? ' · Lv ' + lv : '') + (d.latest && d.latest.t ? ' · ' + ldoAgo(d.latest.t * 1000) : '');
+    h.textContent = T('Bilinen son ekipman', 'Last known equipment') + ' · ' + cs.agree + '/' + cs.of + T(' rapor aynı', ' reports agree') + (lv ? ' · Lv ' + lv : '') + (d.latest && d.latest.t ? ' · ' + ldoAgo(d.latest.t * 1000) : '');
     var l1 = document.createElement('div'); l1.textContent = T('Silahlar: ', 'Weapons: ') + parts.join(' · ');
     var l2 = document.createElement('div'); l2.textContent = T('Zırh: ', 'Armour: ') + (cs.a && cs.a.length ? cs.a.join(' · ') : '-');
     box.appendChild(h); box.appendChild(l1); box.appendChild(l2);
@@ -6010,7 +6011,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.92';
+  var TH_VER = '1.6.93';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6111,6 +6112,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.93', 'o', ['Saldırı sayfasında artık tek kutu var: "Bilinen son ekipman" (ortak veri). Ortak veri yoksa ya da paylaşım kapalıysa yerel kayıt gösterilir.'], ['The attack page now shows one box: "Last known equipment" (shared data). Falls back to the local record when there is no shared data or sharing is off.']],
     ['1.6.92', 'n', ['Teçhizat kayıtlarına arka planda FF verisi (hesaplanan ve FF Scouter) kaydediliyor; ekranda gösterilmiyor, JSON dışa aktarımında var.'], ['Loadout records now silently store FF data (computed and FF Scouter); not shown on screen, included in the JSON export.']],
     ['1.6.91', 'n', ['Ortak paylaşım: sunucunun hata nedeni durum satırında gösteriliyor.'], ['Shared data: the server error reason is shown in the status line.']],
     ['1.6.90', 'n', ['Ortak paylaşım: ayarlarda kayıt/yükleme durumu satırı eklendi.'], ['Shared data: added a record/upload status line in settings.']],
