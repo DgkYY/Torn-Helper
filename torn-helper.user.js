@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.113
+// @version      1.6.114
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.113', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.114', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5823,6 +5823,8 @@
     location.assign('https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=' + encodeURIComponent(r[0]) + '&itemName=' + encodeURIComponent(r[1]) + (r[2] ? '&itemType=' + encodeURIComponent(r[2]) : ''));
   }
   var thmMk = {};
+  var THM_BW = ['Achilles', 'Assassinate', 'Backstab', 'Berserk', 'Bleed', 'Blindfire', 'Blindside', 'Bloodlust', 'Burn', 'Comeback', 'Conserve', 'Cripple', 'Crusher', 'Cupid', 'Deadeye', 'Deadly', 'Disarm', 'Double Tap', 'Double-edged', 'Empower', 'Eviscerate', 'Execute', 'Expose', 'Finale', 'Focus', 'Frenzy', 'Fury', 'Grace', 'Hazardous', 'Home run', 'Irradiate', 'Lacerate', 'Motivation', 'Paralyzed', 'Parry', 'Penetrate', 'Plunder', 'Poison', 'Powerful', 'Proficience', 'Puncture', 'Quicken', 'Rage', 'Revitalize', 'Roshambo', 'Slow', 'Smash', 'Smurf', 'Specialist', 'Spray', 'Stricken', 'Stun', 'Suppress', 'Sure Shot', 'Throttle', 'Toxin', 'Warlord', 'Weaken', 'Wind-up', 'Wither'];
+  var THM_BA = ['Impassable', 'Impenetrable', 'Imperviable', 'Impregnable', 'Insurmountable', 'Invulnerable', 'Immutable', 'Kinetic'];
   function thmFmtStat(d) {
     if (!d) return '';
     var st = d.stats || d, o = [];
@@ -5852,7 +5854,10 @@
       var ad = document.createElement('div'); ad.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:12px;font-weight:400;';
       var fs = /^(Armor|Armour|Defensive)$/i.test(r[2]) ? [['arm', T('Min zırh', 'Min armor')], ['q', T('Min kalite', 'Min quality')]] : [['dmg', T('Min hasar', 'Min damage')], ['acc', T('Min isabet', 'Min accuracy')], ['q', T('Min kalite', 'Min quality')]];
       fs.forEach(function (f) { var i = document.createElement('input'); i.type = 'number'; i.placeholder = f[1]; i.style.cssText = inpS; i.addEventListener('input', function () { fl[f[0]] = i.value === '' ? null : +i.value; draw(); }); ad.appendChild(i); });
-      var bi = document.createElement('input'); bi.type = 'text'; bi.placeholder = T('Bonus (örn. Cripple)', 'Bonus (e.g. Cripple)'); bi.style.cssText = inpS.replace('width:62px', 'width:140px'); bi.addEventListener('input', function () { fl.bon = bi.value.trim().toLowerCase(); draw(); }); ad.appendChild(bi);
+      var isArm = /^(Armor|Armour|Defensive)$/i.test(r[2]), bl = isArm ? THM_BA : THM_BW, bi = document.createElement('select');
+      bi.style.cssText = inpS.replace('width:62px', 'width:140px');
+      bi.innerHTML = '<option value="">' + T('Bonus: hepsi', 'Bonus: any') + '</option>' + bl.map(function (z) { return '<option value="' + z + '">' + z + '</option>'; }).join('');
+      bi.addEventListener('change', function () { fl.bon = bi.value; load(false); }); ad.appendChild(bi);
       ls.appendChild(ad);
     }
     var body = document.createElement('div'); ls.appendChild(body);
@@ -5867,7 +5872,6 @@
         if (fl.acc != null && !(Number(st.accuracy) >= fl.acc)) return false;
         if (fl.arm != null && !(Number(st.armor) >= fl.arm)) return false;
         if (fl.q != null && !(Number(st.quality) >= fl.q)) return false;
-        if (fl.bon && thmBon(x.d).join(' ').toLowerCase().indexOf(fl.bon) < 0) return false;
         return true;
       });
       if (!rows.length) { body.textContent = T('Uygun ilan yok', 'No matching listing'); return; }
@@ -5880,16 +5884,22 @@
       });
     }
     function load(force) {
-      var c = thmMk[r[0]];
-      if (c && !force && Date.now() - c.at < 45000) { data = c.l; note.textContent = T('En ucuz ', 'Cheapest ') + data.length + T(' ilan içinden', ' listings searched'); draw(); return; }
+      var ck = r[0] + '|' + (fl.bon || ''), c = thmMk[ck];
+      if (c && !force && Date.now() - c.at < 45000) { data = c.l; fin(); return; }
       if (!keyOk()) { body.textContent = T('API anahtarı gerekli', 'API key required'); return; }
       body.textContent = T('Yükleniyor…', 'Loading…');
-      prApi('market/' + encodeURIComponent(r[0]) + '/itemmarket?limit=100').then(function (j) {
+      var want = fl.bon || '';
+      prApi('market/' + encodeURIComponent(r[0]) + '/itemmarket?limit=100' + (want ? '&bonus=' + encodeURIComponent(want) : '')).then(function (j) {
+        if (want !== (fl.bon || '')) return;
         var im = j && j.itemmarket; if (!im || !Array.isArray(im.listings)) throw new Error('x');
-        data = im.listings.map(function (x) { return { p: Number(x.price) || 0, a: Number(x.amount) || 0, d: x.item_details || null }; });
-        thmMk[r[0]] = { at: Date.now(), l: data };
-        note.textContent = T('En ucuz ', 'Cheapest ') + data.length + T(' ilan içinden', ' listings searched'); draw();
+        data = im.listings.map(function (x) { return { p: Number(x.price) || 0, a: Number(x.amount) || 0, d: x.item_details || null }; }).sort(function (u, v2) { return u.p - v2.p; });
+        thmMk[ck] = { at: Date.now(), l: data }; fin();
       }).catch(function () { body.textContent = T('Piyasa verisi alınamadı', 'Could not load market data'); });
+    }
+    function fin() {
+      var w = fl.bon ? data.filter(function (x) { return thmBon(x.d).join(' ').toLowerCase().indexOf(fl.bon.toLowerCase().slice(0, 5)) >= 0; }).length : 1;
+      note.textContent = (fl.bon ? fl.bon + T(' bonuslu en ucuz ', ' bonus, cheapest ') : T('En ucuz ', 'Cheapest ')) + data.length + T(' ilan içinden', ' listings searched') + (fl.bon && data.length && !w ? T(' · uyarı: ilanlarda bu bonus görünmüyor, API bonus süzmesi çalışmamış olabilir', ' · warning: no listing shows this bonus, the API bonus filter may not have worked') : '');
+      draw();
     }
     load(false);
   }
@@ -6327,7 +6337,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.113';
+  var TH_VER = '1.6.114';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6428,6 +6438,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.114', 'o', ['THM: bonus artık açılır listeden seçilir; bonus seçilince API o bonuslu en ucuz 100 ilanı getirir ve fiyata göre sıralar.'], ['THM: bonus is now picked from a dropdown; picking one loads the 100 cheapest listings with that bonus, sorted by price.']],
     ['1.6.113', 'n', ['THM dugmesi ust cubugun yuksekligini degistirmez (sayfa asagi kaymasi giderildi).'], ['THM button no longer changes the top bar height (page no longer shifts down).']],
     ['1.6.112', 'n', ['THM dugmesi ust cubuktaki diger simgelerle ayni hizaya otomatik oturtulur.'], ['THM button auto-aligns vertically with the other top-bar icons.']],
     ['1.6.111', 'n', ['THM: silah/zirh suzme kutulari Weapon/Armor turu icin de gosterilir.'], ['THM: weapon/armor filter boxes now also appear for the Weapon/Armor item types.']],
