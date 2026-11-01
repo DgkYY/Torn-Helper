@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.01
+// @version      1.7.02
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.01', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.02', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -4340,6 +4340,50 @@
     }
   }
   setInterval(enrTick, 1500);
+
+  /* Esya sayfasi: kitaplarin yanina kisa etki ozeti (Torn API esya aciklamasindaki effect alani; Turkce ozet bilinen kaliplar icin, aksi halde Ingilizce metin) */
+  function bkxKey(n) { return String(n).replace(/^\s*book\s*:\s*/i, '').trim().toLowerCase(); }
+  var BKX_KIND = { 'alcohol': 'Alkol', 'energy drink': 'Enerji içeceği', 'candy': 'Şeker', 'medical': 'Medical', 'drug': 'Drug', 'booster': 'Booster', 'consumable': 'Tüketilebilir', 'nerve': 'Nerve', 'happiness': 'Happy', 'happy': 'Happy', 'life': 'Life', 'energy': 'Enerji' };
+  var BKX_R = [
+    [/doubles? (alcohol|energy drink|candy) effects?/i, function (m, a) { return BKX_KIND[a.toLowerCase()] + ' etkisi ×2'; }],
+    [/reduces? all consumable cooldowns? by (\d+)%/i, 'Tüm tüketilebilir cooldownlar −%$1'],
+    [/reduces? (medical|drug|booster|alcohol|candy|energy drink) cooldowns? by (\d+)%/i, function (m, a, p) { return BKX_KIND[a.toLowerCase()] + ' cooldown −%' + p; }],
+    [/doubles? (nerve|happiness|happy|life|energy) regeneration/i, function (m, a) { return BKX_KIND[a.toLowerCase()] + ' yenilenmesi ×2'; }],
+    [/happiness can regenerate above (the )?maximum/i, 'Happy maksimumun üstüne çıkabilir'],
+    [/no drug addiction/i, 'Uyuşturucu bağımlılığı artmaz'],
+    [/reduces? travel times? by (\d+)%/i, 'Uçuş süresi −%$1'],
+    [/reduces? (hospital|jail) times? by (\d+)%/i, function (m, a, p) { return (a.toLowerCase() === 'jail' ? 'Hapis' : 'Hastane') + ' süresi −%' + p; }],
+    [/increases? (strength|defense|speed|dexterity) by (\d+)%/i, '$1 +%$2']
+  ];
+  function bkxTr(en) {
+    var s = String(en).replace(/\.\s*$/, ''), hit = false;
+    BKX_R.forEach(function (r) { var n = s.replace(r[0], r[1]); if (n !== s) { hit = true; s = n; } });
+    return hit ? s.replace(/\s*\bfor (\d+) days?\b/i, ' · $1 gün') : '';
+  }
+  var bkxTry = 0;
+  function bkxTick() {
+    if (!/item\.php/.test(location.pathname)) return;
+    var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
+    var els = root.querySelectorAll('li[data-item]'), books = [], i;
+    for (i = 0; i < els.length; i++) { var nm0 = els[i].querySelector('.name-wrap .name') || els[i].querySelector('.name'); if (nm0 && /^\s*book\s*:/i.test(nm0.textContent || '')) books.push([els[i], nm0]); }
+    if (!books.length) return;
+    var fx = gmGet('book-fx', null);
+    if (!fx && keyOk() && Date.now() - bkxTry > 600000) { bkxTry = Date.now(); thmItems(true); }
+    var m = fx && fx.m ? fx.m : {};
+    books.forEach(function (z) {
+      var en = m[bkxKey(z[1].textContent || '')], ex = z[0].querySelector('.th-bkx');
+      if (!en) { if (ex) ex.remove(); return; }
+      var tr = bkxTr(en), txt = (T(tr || en, en)).slice(0, 110);
+      if (ex && ex.getAttribute('data-s') === txt) return;
+      if (!ex) {
+        ex = document.createElement('span'); ex.className = 'th-bkx';
+        ex.style.cssText = 'margin-left:10px;color:#fbbf24;font-size:11px;font-weight:700;pointer-events:auto;';
+        z[1].parentNode.insertBefore(ex, z[1].nextSibling);
+      }
+      ex.setAttribute('data-s', txt); ex.textContent = txt; ex.title = en;
+    });
+  }
+  setInterval(bkxTick, 1500);
   function gysStatInject(chosen, st) {
     var lines = gysStatLines(chosen, st), lis = document.querySelectorAll('#gymroot ul[class*="properties___"] > li');
     gybLoad(); Object.keys(lines).forEach(function (k2) { var bl = gybFor(k2); if (bl) lines[k2].push(bl); });
@@ -5823,6 +5867,8 @@
       prApi('torn?selections=items').then(function (j) {
         var it = j && j.items, l = [];
         if (it) { var arr = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr.forEach(function (x) { if (x && x.name && x.id != null) l.push([String(x.id), String(x.name), String(x.type || ''), String(x.sub_type || (x.details && x.details.sub_type) || '')]); }); }
+        var bkm = {};
+        if (it) { (Array.isArray(it) ? it : Object.keys(it).map(function (k) { return it[k]; })).forEach(function (x) { if (x && x.name && typeof x.effect === 'string' && x.effect && (/^\s*book\s*:/i.test(x.name) || /book/i.test(String(x.type || '')))) bkm[bkxKey(x.name)] = x.effect; }); gmSet('book-fx', { at: Date.now(), m: bkm }); }
         var mvm = {};
         if (it) { var arr2 = Array.isArray(it) ? it : Object.keys(it).map(function (k) { return Object.assign({ id: k }, it[k]); }); arr2.forEach(function (x) { if (!x || x.id == null) return; var mv = Number(x.market_value) || Number(x.value && typeof x.value === 'object' ? (x.value.market_price || x.value.market_value) : x.value) || 0; if (mv > 0) mvm[String(x.id)] = mv; }); }
         if (Object.keys(mvm).length) gmSet('thm-mv', mvm);
@@ -5994,7 +6040,7 @@
   function ivpParse(li) {
     var lv = li.querySelectorAll('*'), dec = [], bn = '', bv = 0, bids = thmBids();
     for (var i = 0; i < lv.length; i++) {
-      var e = lv[i]; if (e.children.length || e.classList.contains('th-ivp') || e.classList.contains('th-enr')) continue;
+      var e = lv[i]; if (e.children.length || e.classList.contains('th-ivp') || e.classList.contains('th-enr') || e.classList.contains('th-bkx')) continue;
       var t = (e.textContent || '').replace(/\s+/g, ' ').trim();
       if (/^\d{1,3}\.\d{2}$/.test(t)) dec.push(t);
       else if (!bn) { var mm = /^([A-Z][A-Za-z -]{2,20}):\s.*?(\d+(?:\.\d+)?)\s*%/.exec(t); if (mm && bids[mm[1]] != null) { bn = mm[1]; bv = Number(mm[2]) || 0; } }
@@ -6649,7 +6695,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.01';
+  var TH_VER = '1.7.02';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6750,6 +6796,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.02', 'o', ['Items sayfasi: kitaplarin yanina kisa etki ozeti (Torn API esya aciklamasindan; bilinen kaliplar Turkce, digerleri Ingilizce, uzerine gelince tam metin).'], ['Items page: a short effect summary next to each book (from the Torn API item effect text; full text on hover).']],
     ['1.7.01', 'o', ['Items sayfasi: alkolde nerve, sekerde happy miktari taban ve faction/kitap/sirket bonuslariyla gercek degeriyle gosteriliyor (enerji iceceklerindeki gibi; adet varsa toplam).'], ['Items page: alcohol shows nerve and candy shows happy, base and real value with faction/book/company bonuses (like energy drinks; total when you own several).']],
     ['1.7.0', 'o', ['THM düğmesinin adı Hızlı Market oldu. Sohbet özellikleri (gizle, boyutlandırma, @ ile isim tamamlama, takas sayacı) ve Item Market araçları bu sürümde bir arada.'], ['The THM button is now called Quick Market. Chat features (hide, resize, @name autocomplete, trade timer) and the Item Market tools ship together in this release.']],
     ['1.6.126', 'o', ['Sohbet: ustte Sohbeti gizle / goster dugmesi; kutularin sol ust kosesinden surukleyerek boyutlandirma (boyut hatirlanir); mesaj yazarken @ ile baslayan ismi sohbette gorunen oyunculardan Tab ile tamamlama; Takas sohbeti basliginda bir sonraki mesaja kalan sure sayaci (aralik ayarlardan).'], ['Chat: Hide / Show chat button in the top bar; resize chat boxes by dragging the top-left corner (size is remembered); @name autocomplete with Tab from players seen in the chat; Trade chat header timer showing time left until the next message (interval in settings).']],
