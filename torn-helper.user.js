@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.115
+// @version      1.6.117
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.115', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.117', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5819,8 +5819,16 @@
     }
     return c && c.l;
   }
-  function thmGo(r) {
-    location.assign('https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=' + encodeURIComponent(r[0]) + '&itemName=' + encodeURIComponent(r[1]) + (r[2] ? '&itemType=' + encodeURIComponent(r[2]) : ''));
+  var THM_BID = { 'Achilles': 50, 'Assassinate': 72, 'Backstab': 52, 'Berserk': 54, 'Bleed': 57, 'Blindfire': 33, 'Blindside': 51, 'Bloodlust': 85, 'Burn': 30, 'Comeback': 67, 'Conserve': 55, 'Cripple': 45, 'Crusher': 49, 'Cupid': 47, 'Deadeye': 63, 'Deadly': 62, 'Disarm': 86, 'Double Tap': 105, 'Double-edged': 74, 'Empower': 87, 'Eviscerate': 56, 'Execute': 75, 'Expose': 1, 'Finale': 82, 'Focus': 79, 'Freeze': 38, 'Frenzy': 80, 'Fury': 64, 'Grace': 53, 'Home run': 83, 'Irradiate': 102, 'Lacerate': 89, 'Motivation': 61, 'Paralyze': 59, 'Parry': 84, 'Penetrate': 101, 'Plunder': 21, 'Poison': 32, 'Powerful': 68, 'Proficience': 14, 'Puncture': 66, 'Quicken': 88, 'Rage': 65, 'Revitalize': 41, 'Roshambo': 43, 'Shock': 120, 'Slow': 44, 'Smash': 104, 'Smurf': 73, 'Specialist': 71, 'Spray': 35, 'Stricken': 20, 'Stun': 58, 'Suppress': 60, 'Sure Shot': 78, 'Throttle': 48, 'Toxin': 103, 'Warlord': 81, 'Weaken': 46, 'Wind-up': 76, 'Wither': 42 };
+  function thmBids() { var m = gmGet('thm-bid', null); m = m && typeof m === 'object' ? m : {}; for (var k in THM_BID) m[k] = THM_BID[k]; return m; }
+  function thmLearn(listings) {
+    var m = thmBids(), ch = 0;
+    listings.forEach(function (x) { var b = x && x.item_details && Array.isArray(x.item_details.bonuses) ? x.item_details.bonuses : []; b.forEach(function (z) { if (z && z.title && z.id != null && m[z.title] !== z.id) { m[z.title] = z.id; ch = 1; } }); });
+    if (ch) gmSet('thm-bid', m);
+  }
+  function thmGo(r, bon) {
+    var id = bon ? thmBids()[bon] : null;
+    location.assign('https://www.torn.com/page.php?sid=ItemMarket#/market/view=search&itemID=' + encodeURIComponent(r[0]) + '&sortField=price&sortOrder=ASC&itemName=' + encodeURIComponent(r[1]) + (r[2] ? '&itemType=' + encodeURIComponent(r[2]) : '') + (id != null ? '&bonuses%5B0%5D=' + encodeURIComponent(id) : ''));
   }
   var thmMk = {};
   var THM_BM = ['Achilles', 'Assassinate', 'Backstab', 'Berserk', 'Bleed', 'Bloodlust', 'Crusher', 'Cupid', 'Deadeye', 'Disarm', 'Double-edged', 'Empower', 'Eviscerate', 'Expose', 'Frenzy', 'Fury', 'Grace', 'Home run', 'Irradiate', 'Lacerate', 'Motivation', 'Parry', 'Penetrate', 'Plunder', 'Powerful', 'Puncture', 'Quicken', 'Rage', 'Roshambo', 'Shock', 'Slow', 'Smash', 'Stun', 'Throttle', 'Toxin', 'Weaken', 'Wind-up', 'Wither'];
@@ -5850,7 +5858,7 @@
     bk.addEventListener('click', function (e) { e.preventDefault(); pn.removeAttribute('data-d'); thmRender(); });
     var nm = document.createElement('span'); nm.textContent = r[1]; nm.style.flex = '1';
     var op = document.createElement('a'); op.href = '#'; op.textContent = T('Markette aç', 'Open in market'); op.style.cssText = 'color:#60a5fa;font-size:12px;';
-    op.addEventListener('click', function (e) { e.preventDefault(); thmGo(r); });
+    op.addEventListener('click', function (e) { e.preventDefault(); thmGo(r, fl.bon); });
     hd.appendChild(bk); hd.appendChild(nm); hd.appendChild(op); ls.appendChild(hd);
     if (adv) {
       var ad = document.createElement('div'); ad.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;font-size:12px;font-weight:400;';
@@ -5861,7 +5869,7 @@
       bi.innerHTML = '<option value="">' + T('Bonus: hepsi', 'Bonus: any') + '</option>' + bl.map(function (z) { return '<option value="' + z + '">' + z + '</option>'; }).join('') + '<option value="__o">' + T('Diğer (yaz)…', 'Other (type)…') + '</option>';
       var bo = document.createElement('input'); bo.type = 'text'; bo.placeholder = T('Bonus adı', 'Bonus name'); bo.style.cssText = inpS.replace('width:62px', 'width:110px') + 'display:none;'; var bt = 0;
       bo.addEventListener('input', function () { clearTimeout(bt); bt = setTimeout(function () { fl.bon = bo.value.trim(); if (fl.bon) load(false); }, 600); });
-      bi.addEventListener('change', function () { if (bi.value === '__o') { bo.style.display = ''; bo.focus(); fl.bon = bo.value.trim(); } else { bo.style.display = 'none'; fl.bon = bi.value; } load(false); }); ad.appendChild(bi); ad.appendChild(bo);
+      bi.addEventListener('change', function () { if (bi.value === '__o') { bo.style.display = ''; bo.focus(); fl.bon = bo.value.trim(); } else { bo.style.display = 'none'; fl.bon = bi.value; } load(false); }); if (!isArm) { ad.appendChild(bi); ad.appendChild(bo); }
       ls.appendChild(ad);
     }
     var body = document.createElement('div'); ls.appendChild(body);
@@ -5883,7 +5891,7 @@
         var d = document.createElement('div'); d.style.cssText = 'padding:4px 6px;margin-bottom:3px;background:#111827;border-radius:3px;cursor:pointer;font-weight:400;font-size:13px;';
         var bn = thmBon(x.d), sx = thmFmtStat(x.d);
         d.innerHTML = '<b style="color:#86efac;">$' + Number(x.p).toLocaleString('en-US') + '</b> <span style="color:#9ca3af;">x' + x.a + '</span>' + (sx ? '<div style="font-size:11px;color:#d1d5db;">' + sx + '</div>' : '') + (bn.length ? '<div style="font-size:11px;color:#fbbf24;">' + bn.join(', ') + '</div>' : '');
-        d.addEventListener('click', function () { thmGo(r); });
+        d.addEventListener('click', function () { thmGo(r, fl.bon); });
         body.appendChild(d);
       });
     }
@@ -5896,6 +5904,7 @@
       prApi('market/' + encodeURIComponent(r[0]) + '/itemmarket?limit=100' + (want ? '&bonus=' + encodeURIComponent(want) : '')).then(function (j) {
         if (want !== (fl.bon || '')) return;
         var im = j && j.itemmarket; if (!im || !Array.isArray(im.listings)) throw new Error('x');
+        thmLearn(im.listings);
         data = im.listings.map(function (x) { return { p: Number(x.price) || 0, a: Number(x.amount) || 0, d: x.item_details || null }; }).sort(function (u, v2) { return u.p - v2.p; });
         thmMk[ck] = { at: Date.now(), l: data }; fin();
       }).catch(function () { body.textContent = T('Piyasa verisi alınamadı', 'Could not load market data'); });
@@ -6341,7 +6350,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.115';
+  var TH_VER = '1.6.117';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6442,6 +6451,8 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.117', 'o', ['THM: 61 silah bonusunun Torn numarası eklendi; bonus seçince Item Market o bonus filtresi açık gelir. Zırhta bonus seçimi kaldırıldı (ad yeterli).'], ['THM: Torn IDs for 61 weapon bonuses added; with a bonus picked the Item Market opens with that filter on. Armor bonus picker removed (name is enough).']],
+    ['1.6.116', 'o', ['THM: bonus secili iken Item Market o bonus filtresi acik olarak acilir (Penetrate ve Achilles biliniyor, digerleri ilanlardan ogrenilir).'], ['THM: with a bonus selected the Item Market opens with that bonus filter on (Penetrate and Achilles are known, others are learned from listings).']],
     ['1.6.115', 'n', ['THM: Melee, Primary ve Secondary icin gercek bonus listeleri; listede olmayan bonus icin Diger (yaz) secenegi.'], ['THM: real bonus lists for Melee, Primary and Secondary; an Other (type) option for any bonus not listed.']],
     ['1.6.114', 'o', ['THM: bonus artık açılır listeden seçilir; bonus seçilince API o bonuslu en ucuz 100 ilanı getirir ve fiyata göre sıralar.'], ['THM: bonus is now picked from a dropdown; picking one loads the 100 cheapest listings with that bonus, sorted by price.']],
     ['1.6.113', 'n', ['THM dugmesi ust cubugun yuksekligini degistirmez (sayfa asagi kaymasi giderildi).'], ['THM button no longer changes the top bar height (page no longer shifts down).']],
