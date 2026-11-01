@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.120
+// @version      1.6.121
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.120', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.121', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5960,12 +5960,12 @@
     var ex = document.getElementById('th-thm');
     if (!ui.thm) { if (ex) ex.remove(); var pp = document.getElementById('th-thm-pn'); if (pp) pp.remove(); return; }
     var pn = document.getElementById('th-thm-pn'); if (pn && !pn.getAttribute('data-d') && thmItems() && pn.querySelector('.th-thm-l').childNodes.length <= 1 && !pn.querySelector('[data-first]')) thmRender();
-    if (ex) { thmAlign(); return; }
-    var tb = document.querySelector('#topHeaderBanner ul.toolbar'), a = document.createElement('a');
-    a.id = 'th-thm'; a.href = '#'; a.textContent = 'THM'; a.title = T('Item Market hızlı arama', 'Item Market quick search');
+    if (ex) return;
+    var tb = document.querySelector('#topHeaderBanner ul.menu-items'), a = document.createElement('a');
+    a.id = 'th-thm-a'; a.href = '#'; a.title = T('Item Market hızlı arama', 'Item Market quick search');
     a.addEventListener('click', thmToggle);
-    if (tb) { var li = document.createElement('li'); li.id = 'th-thm'; a.id = 'th-thm-a'; a.style.cssText = 'position:relative;display:block;white-space:nowrap;padding:4px 8px;margin:0 4px;font:700 12px Arial,sans-serif;color:#fbbf24;border:1px solid #fbbf24;border-radius:4px;text-decoration:none;line-height:16px;'; li.style.cssText = 'float:left;height:0;width:auto;overflow:visible;margin:0;padding:0;position:relative;z-index:5;'; li.appendChild(a); tb.appendChild(li); }
-    else if (document.body) { a.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147482000;padding:4px 8px;font:700 12px Arial,sans-serif;color:#fbbf24;background:#111;border:1px solid #fbbf24;border-radius:4px;text-decoration:none;'; document.body.appendChild(a); }
+    if (tb) { var li = document.createElement('li'); li.id = 'th-thm'; li.className = 'menu-item-link'; a.className = 'menu-item-href'; var sp = document.createElement('span'); sp.className = 'link-text'; sp.textContent = 'THM'; sp.style.cssText = 'color:#fbbf24;font-weight:700;'; a.appendChild(sp); li.appendChild(a); tb.appendChild(li); }
+    else if (document.body) { a.id = 'th-thm'; a.textContent = 'THM'; a.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147482000;padding:4px 8px;font:700 12px Arial,sans-serif;color:#fbbf24;background:#111;border:1px solid #fbbf24;border-radius:4px;text-decoration:none;'; document.body.appendChild(a); }
   }
   setInterval(thmTick, 1500);
   /* Envanter: esya adinin yanina Item Market fiyati. Duz esya: en ucuz ilan. Silah/zirh: ayni bonuslu ve en az ayni istatistikli en ucuz ilan (>= ile). Ekranda gorunen esyalar, tek tek, 20 dk onbellek. */
@@ -6423,7 +6423,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.120';
+  var TH_VER = '1.6.121';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6524,6 +6524,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.121', 'n', ['THM dugmesi ust cubukta Wiki Rules Forums satirina tasindi (arama kutusu satiri kayma sorunu giderildi).'], ['THM button moved to the Wiki/Rules/Forums row (fixes the search row being pushed down).']],
     ['1.6.120', 'o', ['Envanterde silah ve zırhta fiyat artık bonus ve istatistiğe göre: aynı bonuslu ve en az aynı hasar/isabet (zırhta zırh değeri) olan en ucuz Item Market ilanı, başında ≥ ile.'], ['Inventory weapon and armor prices now consider bonus and stats: the cheapest Item Market listing with the same bonus and at least the same damage/accuracy (armor value for armor), shown with a leading ≥.']],
     ['1.6.119', 'o', ['Envanterde fiyat artık Item Marketteki en ucuz ilan fiyatı (ekranda görünen eşyalar için, 1,5 sn arayla istek, 20 dk önbellek); gelene kadar Torn market value gri ve ~ ile gösterilir.'], ['Inventory price is now the Item Market lowest listing (for items on screen, one request per 1.5 s, 20 min cache); until it loads the Torn market value is shown in grey with a ~.']],
     ['1.6.118', 'o', ['Yeni: Envanterde (Items sayfası) her eşyanın adının yanına piyasa değeri, birden fazlaysa toplamı yazılır.'], ['New: the Items page shows each item market value next to its name, with the total when you own several.']],
