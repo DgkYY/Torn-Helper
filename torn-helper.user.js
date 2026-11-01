@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       YinYang
-// @version      1.6.119
+// @version      1.6.120
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.6.119', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.6.120', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5968,41 +5968,73 @@
     else if (document.body) { a.style.cssText = 'position:fixed;top:12px;right:12px;z-index:2147482000;padding:4px 8px;font:700 12px Arial,sans-serif;color:#fbbf24;background:#111;border:1px solid #fbbf24;border-radius:4px;text-decoration:none;'; document.body.appendChild(a); }
   }
   setInterval(thmTick, 1500);
-  /* Envanter: esya adinin yanina Item Market'teki en ucuz ilan fiyati (ekranda gorunen esyalar, tek tek, 20 dk onbellek); gelene kadar Torn market value */
+  /* Envanter: esya adinin yanina Item Market fiyati. Duz esya: en ucuz ilan. Silah/zirh: ayni bonuslu ve en az ayni istatistikli en ucuz ilan (>= ile). Ekranda gorunen esyalar, tek tek, 20 dk onbellek. */
   var ivpBusy = 0;
   function ivpFmt(n) { return '$' + Number(n).toLocaleString('en-US'); }
+  function ivpParse(li) {
+    var lv = li.querySelectorAll('*'), dec = [], bn = '', bv = 0, bids = thmBids();
+    for (var i = 0; i < lv.length; i++) {
+      var e = lv[i]; if (e.children.length || e.classList.contains('th-ivp') || e.classList.contains('th-enr')) continue;
+      var t = (e.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/^\d{1,3}\.\d{2}$/.test(t)) dec.push(t);
+      else if (!bn) { var mm = /^([A-Z][A-Za-z -]{2,20}):\s.*?(\d+(?:\.\d+)?)\s*%/.exec(t); if (mm && bids[mm[1]] != null) { bn = mm[1]; bv = Number(mm[2]) || 0; } }
+    }
+    if (!dec.length || dec.length > 2) return null;
+    return dec.length === 2 ? { b: bn, bv: bv, d: Number(dec[0]), a: Number(dec[1]), r: 0 } : { b: bn, bv: bv, d: 0, a: 0, r: Number(dec[0]) };
+  }
+  function ivpWeaponPrice(rows, w) {
+    var best = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var x = rows[i];
+      if (w.b && (x.b !== w.b || x.bv < w.bv - 0.5)) continue;
+      if (w.r ? !(x.r >= w.r - 0.005) : !(x.d >= w.d - 0.005 && x.a >= w.a - 0.005)) continue;
+      if (!best || x.p < best) best = x.p;
+    }
+    return best;
+  }
   function ivpTick() {
     if (!ui.ivp || !/item\.php/.test(location.pathname)) return;
     var root = document.querySelector('.main-items-cont-wrap') || document.body; if (!root) return;
     thmItems();
-    var mv = gmGet('thm-mv', null) || {}, pc = gmGet('ivp-p', null) || {}, now = Date.now(), els = root.querySelectorAll('li[data-item]'), need = null;
+    var mv = gmGet('thm-mv', null) || {}, pc = gmGet('ivp-p', null) || {}, wc = gmGet('ivp-w', null) || {}, now = Date.now(), els = root.querySelectorAll('li[data-item]'), need = null;
     for (var i = 0; i < els.length; i++) {
       var li = els[i], id = li.getAttribute('data-item'), ex = li.querySelector('.th-ivp');
       var nmEl = li.querySelector('.name-wrap .name') || li.querySelector('.name');
-      var c = pc[id], low = c && c.p ? c.p : 0, v = low || mv[id] || 0;
+      var wp = ivpParse(li), wk = wp ? id + '|' + wp.b : '', we = wp ? wc[wk] : null, c = pc[id];
+      var low = c && c.p ? c.p : 0, sim = we && we.rows ? ivpWeaponPrice(we.rows, wp) : 0, v = sim || low || mv[id] || 0;
       if (!v || !nmEl) { if (ex) ex.remove(); }
       else {
         var q = Number(li.getAttribute('data-qty')) || 1;
-        var txt = (low ? '' : '~') + ivpFmt(v) + (q > 1 ? ' (x' + q + ' = ' + ivpFmt(v * q) + ')' : '');
+        var txt = (sim ? '≥' : low ? '' : '~') + ivpFmt(v) + (q > 1 ? ' (x' + q + ' = ' + ivpFmt(v * q) + ')' : '');
         if (!ex || ex.getAttribute('data-s') !== txt) {
           if (!ex) {
             ex = document.createElement('span'); ex.className = 'th-ivp';
             ex.style.cssText = 'margin-left:10px;font-size:11px;font-weight:700;white-space:nowrap;pointer-events:none;';
             var an = li.querySelector('.th-enr'); (an || nmEl).parentNode.insertBefore(ex, (an || nmEl).nextSibling);
           }
-          ex.setAttribute('data-s', txt); ex.textContent = txt; ex.style.color = low ? '#86efac' : '#9ca3af';
-          ex.title = low ? T('Item Market en ucuz ilan', 'Item Market lowest listing') : T('Torn market value (en ucuz ilan henuz alinmadi)', 'Torn market value (lowest listing not loaded yet)');
+          ex.setAttribute('data-s', txt); ex.textContent = txt; ex.style.color = sim || low ? '#86efac' : '#9ca3af';
+          ex.title = sim ? T('Ayni bonuslu ve en az ayni istatistikli en ucuz ilan', 'Cheapest listing with the same bonus and at least the same stats') : low ? T('Item Market en ucuz ilan', 'Item Market lowest listing') : T('Torn market value (en ucuz ilan henuz alinmadi)', 'Torn market value (lowest listing not loaded yet)');
         }
       }
-      if (!need && !(c && now - c.at < 1200000)) { var r = li.getBoundingClientRect(); if (r.height > 0 && r.bottom > 0 && r.top < window.innerHeight) need = id; }
+      if (!need) {
+        var r0 = li.getBoundingClientRect(), vis = r0.height > 0 && r0.bottom > 0 && r0.top < window.innerHeight;
+        if (vis) { if (wp) { if (!(we && now - we.at < 1200000)) need = { k: 'w', id: id, b: wp.b, key: wk }; } else if (!(c && now - c.at < 1200000)) need = { k: 'g', id: id }; }
+      }
     }
     if (need && !ivpBusy && keyOk()) {
       ivpBusy = 1;
-      prApi('market/' + encodeURIComponent(need) + '/itemmarket?limit=1').then(function (j) {
-        var im = j && j.itemmarket, l = im && Array.isArray(im.listings) ? im.listings : [], p = l.length ? Number(l[0].price) || 0 : 0, all = gmGet('ivp-p', null) || {}, t = Date.now();
-        Object.keys(all).forEach(function (k) { if (t - all[k].at > 3600000) delete all[k]; });
-        all[need] = { at: t, p: p }; gmSet('ivp-p', all);
-      }).catch(function () { var all = gmGet('ivp-p', null) || {}; all[need] = { at: Date.now() - 900000, p: 0 }; gmSet('ivp-p', all); }).then(function () { ivpBusy = 0; });
+      var w = need.k === 'w';
+      prApi('market/' + encodeURIComponent(need.id) + '/itemmarket?limit=' + (w ? 100 : 1) + (w && need.b ? '&bonus=' + encodeURIComponent(need.b) : '')).then(function (j) {
+        var im = j && j.itemmarket, l = im && Array.isArray(im.listings) ? im.listings : [], t = Date.now();
+        if (w) {
+          var all = gmGet('ivp-w', null) || {};
+          Object.keys(all).forEach(function (k) { if (t - all[k].at > 3600000) delete all[k]; });
+          all[need.key] = { at: t, rows: l.map(function (x) { var d = x.item_details || {}, st = d.stats || d, bb = Array.isArray(d.bonuses) && d.bonuses[0] ? d.bonuses[0] : {}; return { p: Number(x.price) || 0, d: Number(st.damage) || 0, a: Number(st.accuracy) || 0, r: Number(st.armor) || 0, b: String(bb.title || bb.name || ''), bv: Number(bb.value) || 0 }; }) };
+          gmSet('ivp-w', all);
+        }
+        var pa = gmGet('ivp-p', null) || {}; Object.keys(pa).forEach(function (k) { if (t - pa[k].at > 3600000) delete pa[k]; });
+        pa[need.id] = { at: t, p: l.length ? Number(l[0].price) || 0 : 0 }; gmSet('ivp-p', pa);
+      }).catch(function () { var pa = gmGet('ivp-p', null) || {}; pa[need.id] = { at: Date.now() - 900000, p: 0 }; gmSet('ivp-p', pa); if (w) { var aw = gmGet('ivp-w', null) || {}; aw[need.key] = { at: Date.now() - 900000, rows: [] }; gmSet('ivp-w', aw); } }).then(function () { ivpBusy = 0; });
     }
   }
   setInterval(ivpTick, 1500);
@@ -6391,7 +6423,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.6.119';
+  var TH_VER = '1.6.120';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6492,6 +6524,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.6.120', 'o', ['Envanterde silah ve zırhta fiyat artık bonus ve istatistiğe göre: aynı bonuslu ve en az aynı hasar/isabet (zırhta zırh değeri) olan en ucuz Item Market ilanı, başında ≥ ile.'], ['Inventory weapon and armor prices now consider bonus and stats: the cheapest Item Market listing with the same bonus and at least the same damage/accuracy (armor value for armor), shown with a leading ≥.']],
     ['1.6.119', 'o', ['Envanterde fiyat artık Item Marketteki en ucuz ilan fiyatı (ekranda görünen eşyalar için, 1,5 sn arayla istek, 20 dk önbellek); gelene kadar Torn market value gri ve ~ ile gösterilir.'], ['Inventory price is now the Item Market lowest listing (for items on screen, one request per 1.5 s, 20 min cache); until it loads the Torn market value is shown in grey with a ~.']],
     ['1.6.118', 'o', ['Yeni: Envanterde (Items sayfası) her eşyanın adının yanına piyasa değeri, birden fazlaysa toplamı yazılır.'], ['New: the Items page shows each item market value next to its name, with the total when you own several.']],
     ['1.6.117', 'o', ['THM: 61 silah bonusunun Torn numarası eklendi; bonus seçince Item Market o bonus filtresi açık gelir. Zırhta bonus seçimi kaldırıldı (ad yeterli).'], ['THM: Torn IDs for 61 weapon bonuses added; with a bonus picked the Item Market opens with that filter on. Armor bonus picker removed (name is enough).']],
