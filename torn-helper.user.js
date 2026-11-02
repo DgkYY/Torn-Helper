@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.04
+// @version      1.7.05
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.04', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.05', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6019,11 +6019,49 @@
     var bx = document.getElementById('th-hdr');
     if (!bx && document.body) {
       bx = document.createElement('div'); bx.id = 'th-hdr';
-      bx.style.cssText = 'position:fixed;top:4px;right:8px;z-index:2147482000;display:flex;gap:6px;font:700 11px Arial,sans-serif;';
+      bx.style.cssText = 'position:fixed;top:4px;right:8px;z-index:2147482000;display:flex;gap:6px;align-items:center;font:700 11px Arial,sans-serif;';
+      var gr = document.createElement('span'); gr.id = 'th-hdr-g'; gr.textContent = '⠿'; gr.title = T('Sürükle: düğmeleri taşı. Çift tık: otomatik konuma dön', 'Drag to move the buttons. Double-click: back to automatic position');
+      gr.style.cssText = 'cursor:move;color:#fbbf24;opacity:.75;font-size:14px;line-height:16px;padding:0 2px;touch-action:none;user-select:none;';
+      gr.addEventListener('pointerdown', function (e) {
+        e.preventDefault(); var r = bx.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+        try { gr.setPointerCapture(e.pointerId); } catch (er) {}
+        var mv = function (ev) { var x = Math.max(0, Math.min(window.innerWidth - r.width, ev.clientX - dx)), y = Math.max(0, Math.min(window.innerHeight - r.height, ev.clientY - dy)); bx.style.left = x + 'px'; bx.style.top = y + 'px'; bx.style.right = 'auto'; bx.setAttribute('data-x', Math.round(x)); bx.setAttribute('data-y', Math.round(y)); };
+        var up = function () { gr.removeEventListener('pointermove', mv); gr.removeEventListener('pointerup', up); gr.removeEventListener('pointercancel', up); if (bx.getAttribute('data-x') != null) gmSet('hdr-pos', { x: Number(bx.getAttribute('data-x')), y: Number(bx.getAttribute('data-y')) }); };
+        gr.addEventListener('pointermove', mv); gr.addEventListener('pointerup', up); gr.addEventListener('pointercancel', up);
+      });
+      gr.addEventListener('dblclick', function () { gmSet('hdr-pos', null); bx.removeAttribute('data-x'); bx.removeAttribute('data-y'); hdrPlace(); });
+      bx.appendChild(gr);
       document.body.appendChild(bx);
     }
     return bx;
   }
+  /* Dugme cubugu konumu: kullanici surukledi ise onu kullan; degilse sag ustte Torn ogeleriyle (link/dugme/arama) cakisiyorsa asagi kaydir. */
+  function hdrHit(bx, r, y) {
+    var fr = [-0.2, 0.2, 0.5, 0.8, 1.2], n = 7, i, j, els, k;
+    for (j = 0; j < fr.length; j++) for (i = 0; i < n; i++) {
+      var px = Math.round(r.left + 2 + (r.width - 4) * i / (n - 1)), py = Math.round(y + r.height * fr[j]);
+      if (px < 0 || py < 0 || px >= window.innerWidth || py >= window.innerHeight) continue;
+      els = document.elementsFromPoint(px, py);
+      for (k = 0; k < els.length; k++) { var e = els[k]; if (bx.contains(e)) continue; if (e.closest && e.closest('a,button,input,select,textarea,svg,img,[role="button"]')) return true; }
+    }
+    return false;
+  }
+  var hdrSig = '';
+  function hdrPlace() {
+    var bx = document.getElementById('th-hdr'); if (!bx || !bx.firstChild) return;
+    var sp = gmGet('hdr-pos', null), r = bx.getBoundingClientRect(); if (!r.width) return;
+    if (sp && typeof sp.x === 'number' && typeof sp.y === 'number') {
+      var x = Math.max(0, Math.min(window.innerWidth - r.width, sp.x)), y = Math.max(0, Math.min(window.innerHeight - r.height, sp.y));
+      bx.style.left = x + 'px'; bx.style.top = y + 'px'; bx.style.right = 'auto'; return;
+    }
+    var sg = window.innerWidth + 'x' + window.innerHeight + ':' + Math.round(r.width) + ':' + bx.style.top;
+    if (sg === hdrSig) return; hdrSig = sg;
+    bx.style.left = 'auto'; bx.style.right = '8px'; r = bx.getBoundingClientRect();
+    var best = 4, y2;
+    for (y2 = 4; y2 <= 200; y2 += 4) { if (!hdrHit(bx, r, y2)) { best = y2; break; } }
+    bx.style.top = best + 'px'; hdrSig = window.innerWidth + 'x' + window.innerHeight + ':' + Math.round(r.width) + ':' + bx.style.top;
+  }
+  setInterval(hdrPlace, 1500); window.addEventListener('resize', function () { hdrSig = ''; hdrPlace(); });
   function hdrBtn(id, label, title, fn) {
     var bx = hdrBox(); if (!bx) return;
     var a = document.createElement('a'); a.id = id; a.href = '#'; a.textContent = label; a.title = title;
@@ -6699,7 +6737,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.04';
+  var TH_VER = '1.7.05';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6800,6 +6838,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.05', 'o', ['Ust cubuktaki Hizli Market / SohbetAra / Sohbeti gizle dugmeleri Torn ogeleriyle (ornegin Opera gibi dar pencerelerde ust simgeler) cakisirsa otomatik asagi kayar; ayrica soldaki tutamactan surukleyip istedigin yere tasiyabilirsin (konum hatirlanir, cift tik sifirlar).'], ['The Quick Market / ChatSearch / Hide chat buttons now move down automatically when they would cover Torn elements (for example the top icons in narrow windows such as Opera); you can also drag them with the left handle (position is remembered, double-click resets).']],
     ['1.7.04', 'o', ['Items sayfasi: kitap ve enhancer aciklamalari tek satira sigacak sekilde kisaltildi (ilk cumle, Turkce karsiliklariyla; tam metin uzerine gelince), satirlar artik ust uste binmiyor.'], ['Items page: book and enhancer descriptions shortened to one line (first sentence, with Turkish equivalents; full text on hover); rows no longer overlap.']],
     ['1.7.03', 'n', ['Ceviri kontrolu yapildi, eksik ya da hatali ceviri bulunmadi.'], ['Translation review done; no missing or wrong translations found.']],
     ['1.7.02', 'o', ['Items sayfasi: kitaplarin ve Enhancer esyalarinin yanina kisa etki ozeti (Torn API esya aciklamasindan; bilinen kaliplar Turkce, digerleri Ingilizce, uzerine gelince tam metin).'], ['Items page: a short effect summary next to each book and enhancer (from the Torn API item effect text; full text on hover).']],
