@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.05
+// @version      1.7.06
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.05', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.06', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -5224,15 +5224,26 @@
     for (var i = 0; i < lis.length; i++) { var b = lis[i].querySelector('.train .btn button.torn-btn'); if (b && !b.disabled) out.push([lis[i], b]); }
     return out;
   }
+  function ctrKey(li) {
+    var a = li.querySelector('a[href*="XID="]'), m = a && /XID=(\d+)/.exec(a.getAttribute('href') || '');
+    if (m) return 'x' + m[1];
+    var all = document.querySelectorAll('ul.employee-list > li');
+    return 'i' + Array.prototype.indexOf.call(all, li) + ':' + (li.id || '');
+  }
+  function ctrTodo(run) {
+    var done = (run && run.done) || [];
+    return ctrEnabled().filter(function (z) { return done.indexOf(ctrKey(z[0])) < 0; });
+  }
   function ctrWait(fn, ms) { return new Promise(function (res) { var t0 = Date.now(), iv = setInterval(function () { var r = fn(); if (r || Date.now() - t0 > ms) { clearInterval(iv); res(r); } }, 150); }); }
   async function ctrRun() {
     if (ctrBusy) return; ctrBusy = true;
     try {
       var run = gmGet('ctr-run', null) || { at: Date.now(), n: 0 };
-      for (var guard = 0; guard < 15; guard++) {
-        var list = ctrEnabled(); if (!list.length) break;
-        run.n++; run.at = Date.now(); gmSet('ctr-run', run);
+      if (!run.done) run.done = [];
+      for (var guard = 0; guard < 40; guard++) {
+        var list = ctrTodo(run); if (!list.length) break;
         var li = list[0][0], b = list[0][1];
+        run.done.push(ctrKey(li)); run.n++; run.at = Date.now(); gmSet('ctr-run', run);
         b.click();
         var conf = await ctrWait(function () {
           var bs = li.querySelectorAll('.train-info button, .train-info a'), k;
@@ -5249,18 +5260,18 @@
   function ctrTick() {
     var old = document.getElementById('th-ctr'), list = document.querySelector('ul.employee-list');
     if (!ui.ctr || !/companies\.php/i.test(location.pathname) || !list) { if (old) old.remove(); return; }
-    var n = ctrEnabled().length, run = gmGet('ctr-run', null);
+    var run = gmGet('ctr-run', null), n = ctrEnabled().length, nTodo = ctrTodo(run).length;
     if (!old) {
       old = document.createElement('div'); old.id = 'th-ctr'; old.style.cssText = 'text-align:right;padding:4px 8px;';
       var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'torn-btn'; bt.style.cssText = 'cursor:pointer;';
-      bt.addEventListener('click', function () { if (!bt.disabled) { gmSet('ctr-run', { at: Date.now(), n: 0 }); ctrRun(); } });
+      bt.addEventListener('click', function () { if (!bt.disabled) { gmSet('ctr-run', { at: Date.now(), n: 0, done: [] }); ctrRun(); } });
       old.appendChild(bt); list.parentNode.insertBefore(old, list);
     }
     var b2 = old.firstChild, txt = T('HEPSİNİ EĞİT', 'TRAIN ALL') + ' (' + n + ')';
     if (b2.textContent !== txt) b2.textContent = txt;
     b2.disabled = !n || ctrBusy; b2.style.opacity = n ? '' : '0.5';
-    if (run && Date.now() - run.at < 90000 && n && !ctrBusy) ctrRun();
-    else if (run && Date.now() - run.at >= 90000) gmSet('ctr-run', null);
+    if (run && Date.now() - run.at < 90000 && nTodo && !ctrBusy) ctrRun();
+    else if (run && !ctrBusy && (!nTodo || Date.now() - run.at >= 90000)) gmSet('ctr-run', null);
   }
   setInterval(ctrTick, 1500);
   /* Profil: yaş (gün) altına yıl */
@@ -6737,7 +6748,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.05';
+  var TH_VER = '1.7.06';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6838,6 +6849,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.06', 'o', ['Sirket Hepsini egit: ayni calisana tekrar tekrar egitim gondermesi duzeltildi; her calisan bir tur icinde en fazla bir kez egitilir.'], ['Company Train all: fixed it sending repeated trains to the same employee; each employee is trained at most once per run.']],
     ['1.7.05', 'o', ['Ust cubuktaki Hizli Market / SohbetAra / Sohbeti gizle dugmeleri Torn ogeleriyle (ornegin Opera gibi dar pencerelerde ust simgeler) cakisirsa otomatik asagi kayar; ayrica soldaki tutamactan surukleyip istedigin yere tasiyabilirsin (konum hatirlanir, cift tik sifirlar).'], ['The Quick Market / ChatSearch / Hide chat buttons now move down automatically when they would cover Torn elements (for example the top icons in narrow windows such as Opera); you can also drag them with the left handle (position is remembered, double-click resets).']],
     ['1.7.04', 'o', ['Items sayfasi: kitap ve enhancer aciklamalari tek satira sigacak sekilde kisaltildi (ilk cumle, Turkce karsiliklariyla; tam metin uzerine gelince), satirlar artik ust uste binmiyor.'], ['Items page: book and enhancer descriptions shortened to one line (first sentence, with Turkish equivalents; full text on hover); rows no longer overlap.']],
     ['1.7.03', 'n', ['Ceviri kontrolu yapildi, eksik ya da hatali ceviri bulunmadi.'], ['Translation review done; no missing or wrong translations found.']],
