@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.06
+// @version      1.7.07
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.06', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.07', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6693,14 +6693,14 @@
   /* Şirket: Stock Shipments formunu hedef güne göre otomatik doldur */
   function cstNum(t) { return Number(String(t || '').replace(/[^\d]/g, '')) || 0; }
   function cstFire(el) { ['input', 'keyup', 'change', 'blur'].forEach(function (n) { try { el.dispatchEvent(new Event(n, { bubbles: true })); } catch (e) {} }); }
-  function cstFill(form, days, clear, all) {
+  function cstFill(form, days, clear, all, sold0) {
     var lis = form.querySelectorAll('ul.stock-list > li'), items = [], sumNeed = 0, stockTot = 0, cap = 0;
     var scope = form.parentNode ? form.parentNode.textContent : '', cm = /Storage capacity:\s*([\d,]+)\s*\/\s*([\d,]+)/i.exec(scope);
     for (var i = 0; i < lis.length; i++) {
       var li = lis[i], st = li.querySelectorAll('.info-wrap .stock')[0], sd = li.querySelectorAll('.info-wrap .sold-daily')[0], vis = li.querySelectorAll('input[type="text"].input-money')[0], hid = li.querySelectorAll('input[type="hidden"].input-money')[0];
       if (!vis) continue;
       var stock = st ? cstNum(String(st.textContent).replace(/In Stock:?/i, '')) : 0, sold = sd ? cstNum(String(sd.textContent).replace(/Sold Daily:?/i, '')) : 0;
-      var need = clear ? 0 : Math.max(0, Math.ceil(sold * days - stock));
+      var need = clear ? 0 : (sold0 ? sold : Math.max(0, Math.ceil(sold * days - stock)));
       items.push({ vis: vis, hid: hid, need: need, stock: stock, sold: sold }); sumNeed += need; stockTot += stock;
     }
     cap = cm ? cstNum(cm[2]) : 0;
@@ -6727,20 +6727,21 @@
     panel = document.createElement('div'); panel.id = 'th-cst';
     panel.style.cssText = 'margin:8px 10px;padding:8px 10px;background:#2a2a2a;border-radius:6px;font:12px Arial,sans-serif;color:#ddd;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;';
     var d = Number(gmGet('cst-days', 2)) || 2;
-    panel.innerHTML = '<b>' + T('Otomatik sipariş', 'Auto order') + '</b><span>' + T('Hedef stok (gün):', 'Target stock (days):') + ' <input type="text" data-d="1" value="' + d + '" style="width:44px;padding:1px 4px;background:#111827;color:#e5e7eb;border:1px solid #4b5563;border-radius:3px;"></span>'
+    panel.innerHTML = '<b>' + T('Otomatik sipariş', 'Auto order') + '</b><button type="button" data-sold="1" title="' + T('Her ürün için günlük satış adedi kadar sipariş yazar (mevcut stoğa bakmaz)', 'Enters the Sold Daily amount for every item (ignores current stock)') + '" style="padding:3px 10px;border:0;border-radius:4px;background:#b45309;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Satılan kadar al', 'Buy sold amount') + '</button><span>' + T('Hedef stok (gün):', 'Target stock (days):') + ' <input type="text" data-d="1" value="' + d + '" style="width:44px;padding:1px 4px;background:#111827;color:#e5e7eb;border:1px solid #4b5563;border-radius:3px;"></span>'
       + '<button type="button" data-go="1" style="padding:3px 10px;border:0;border-radius:4px;background:#2563eb;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Doldur', 'Fill') + '</button>'
       + '<button type="button" data-all="1" style="padding:3px 10px;border:0;border-radius:4px;background:#047857;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Depoyu doldur', 'Fill storage') + '</button>'
       + '<button type="button" data-clr="1" style="padding:3px 10px;border:0;border-radius:4px;background:#4b5563;color:#fff;font:700 12px Arial,sans-serif;cursor:pointer;">' + T('Temizle', 'Clear') + '</button><span id="th-cstm" style="color:#9ca3af;"></span>';
     form.insertBefore(panel, wrap);
     panel.addEventListener('click', function (ev) {
       var t = ev.target; if (!t || !t.getAttribute) return;
-      var go = t.getAttribute('data-go'), clr = t.getAttribute('data-clr'), all = t.getAttribute('data-all');
-      if (!go && !clr && !all) return;
+      var go = t.getAttribute('data-go'), clr = t.getAttribute('data-clr'), all = t.getAttribute('data-all'), sld = t.getAttribute('data-sold');
+      if (!go && !clr && !all && !sld) return;
       ev.preventDefault(); ev.stopPropagation();
       var dd = Number(String(panel.querySelector('input[data-d]').value).replace(',', '.')) || 0;
       if (go && dd <= 0) { document.getElementById('th-cstm').textContent = T('Gün sayısı gir', 'Enter days'); return; }
       if (go) gmSet('cst-days', dd);
-      var r = cstFill(form, dd, !!clr, !!all), m = document.getElementById('th-cstm');
+      var r = cstFill(form, dd, !!clr, !!all, !!sld), m = document.getElementById('th-cstm');
+      if (sld) { if (m) m.textContent = r.ratio < 1 ? T('Satılan kadar yazıldı; depo dolu olacağı için %' + Math.round(r.ratio * 100) + ' oranında kısıldı', 'Sold amount entered; scaled to ' + Math.round(r.ratio * 100) + '% to fit the storage') : T('Her ürüne günlük satış adedi kadar yazıldı', 'Entered the Sold Daily amount for every item'); return; }
       if (all && !r.cap) { m.textContent = T('Depo kapasitesi sayfada bulunamadı', 'Storage capacity not found on the page'); return; }
       if (m) m.textContent = clr ? T('Temizlendi', 'Cleared') : all ? T('Depo dolduruldu: her ürün yaklaşık ' + r.days.toFixed(1) + ' günlük stoğa getirildi', 'Storage filled: every item brought to about ' + r.days.toFixed(1) + ' days of stock') : r.ratio < 1 ? T('Depo dolu olacağı için sipariş %' + Math.round(r.ratio * 100) + ' oranında kısıldı', 'Order scaled to ' + Math.round(r.ratio * 100) + '% to fit storage') : T(r.n + ' ürün dolduruldu', r.n + ' items filled');
     });
@@ -6748,7 +6749,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.06';
+  var TH_VER = '1.7.07';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6849,6 +6850,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.07', 'o', ['Sirket Stock Shipments: Otomatik siparis kutusuna Satilan kadar al dugmesi eklendi; her urune gunluk satis (Sold Daily) adedi kadar siparis yazar.'], ['Company Stock Shipments: added a Buy sold amount button to the Auto order box; it enters the Sold Daily amount for every item.']],
     ['1.7.06', 'o', ['Sirket Hepsini egit: ayni calisana tekrar tekrar egitim gondermesi duzeltildi; her calisan bir tur icinde en fazla bir kez egitilir.'], ['Company Train all: fixed it sending repeated trains to the same employee; each employee is trained at most once per run.']],
     ['1.7.05', 'o', ['Ust cubuktaki Hizli Market / SohbetAra / Sohbeti gizle dugmeleri Torn ogeleriyle (ornegin Opera gibi dar pencerelerde ust simgeler) cakisirsa otomatik asagi kayar; ayrica soldaki tutamactan surukleyip istedigin yere tasiyabilirsin (konum hatirlanir, cift tik sifirlar).'], ['The Quick Market / ChatSearch / Hide chat buttons now move down automatically when they would cover Torn elements (for example the top icons in narrow windows such as Opera); you can also drag them with the left handle (position is remembered, double-click resets).']],
     ['1.7.04', 'o', ['Items sayfasi: kitap ve enhancer aciklamalari tek satira sigacak sekilde kisaltildi (ilk cumle, Turkce karsiliklariyla; tam metin uzerine gelince), satirlar artik ust uste binmiyor.'], ['Items page: book and enhancer descriptions shortened to one line (first sentence, with Turkish equivalents; full text on hover); rows no longer overlap.']],
