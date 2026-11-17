@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.07
+// @version      1.7.08
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -2918,7 +2918,7 @@
   }
   function initI18n() {
     var saved = lsGet(LANG_LS);
-    var start = saved || (/^tr/i.test(navigator.language || '') ? 'tr' : 'en');
+    var start = saved || 'en';
     new MutationObserver(function (muts) {
       if (lang !== 'en') return;
       muts.forEach(function (m) {
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.07', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.08', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -3276,7 +3276,8 @@
   }
   /* Uyarılar: ekranda kutu + (izin varsa) sistem bildirimi + isteğe bağlı ses */
   var OPTS = [['opt-ntf', 'ntf', 'b'], ['opt-ntfen', 'ntfEn', 'b'], ['opt-ntfdr', 'ntfDr', 'b'], ['opt-ntfmd', 'ntfMd', 'b'], ['opt-ntfbs', 'ntfBs', 'b'], ['opt-sound', 'sound', 'b'], ['opt-chain', 'chain', 'b'], ['opt-hosp', 'hosp', 'b'], ['opt-keep', 'keepOpen', 'b'], ['opt-chainsec', 'chainSec', 'n'], ['opt-hospsec', 'hospSec', 'n'], ['opt-sbl', 'sbl', 'b'], ['opt-sbcd', 'sbcd', 'b'], ['opt-sbad', 'sbad', 'b'], ['opt-sbnote', 'sbnote', 'b'], ['opt-sbhg', 'sbhg', 'b'], ['opt-sbrw', 'sbrw', 'b'], ['opt-hdtu', 'hdtu', 'b'], ['opt-bzm', 'bzm', 'b'], ['opt-nocf', 'nocf', 'b'], ['opt-hdlu', 'hdlu', 'b'], ['opt-cfmax', 'cfMax', 'n'], ['opt-bzt', 'bzt', 'b'], ['opt-trtm', 'trtm', 'b'], ['opt-trvl', 'trvl', 'b'], ['opt-gys', 'gys', 'b'], ['opt-stk', 'stk', 'b'], ['opt-fcx', 'fcx', 'b'], ['opt-rnt', 'rnt', 'b'], ['opt-ilk', 'ilk', 'b'], ['opt-cdpre', 'cdpre', 'n'], ['opt-bnf', 'bnf', 'b'], ['opt-nwl', 'nwl', 'b'], ['opt-shp', 'shp', 'b'], ['opt-crm', 'crm', 'b'], ['opt-jlf', 'jlf', 'b'], ['opt-ahs', 'ahs', 'b'], ['opt-wbn', 'wbn', 'b'], ['opt-mtr', 'mtr', 'b'], ['opt-stk2', 'stk2', 'b'], ['opt-jlb', 'jlb', 'b'], ['opt-npc', 'npc', 'b'], ['opt-mta', 'mta', 'b'], ['opt-ocs', 'ocs', 'b'], ['opt-cst', 'cst', 'b'], ['opt-sbtct', 'sbtct', 'b'], ['opt-hdlv', 'hdlv', 'b'], ['opt-sbrm', 'sbrm', 'b'], ['opt-sbhn', 'sbhn', 'b'], ['opt-sbca', 'sbca', 'b'], ['opt-alft', 'alft', 'b'], ['opt-sblk', 'sblk', 'b'], ['opt-sbhi', 'sbhi', 'b'], ['opt-dd', 'dd', 'b'], ['opt-sbpv', 'sbpv', 'b'], ['opt-sboc', 'sboc', 'b'], ['opt-sbvi', 'sbvi', 'b'], ['opt-chp', 'chp', 'b'], ['opt-chppct', 'chpPct', 'n'], ['opt-mf', 'mf', 'b'], ['opt-mfwarn', 'mfWarn', 'b'], ['opt-mfunder', 'mfUnder', 'n'], ['opt-mfsrc', 'mfSrc', 's'], ['opt-mfqty', 'mfQty', 's'], ['opt-mfn', 'mfN', 'n'], ['opt-mffloor', 'mfFloor', 'n'], ['opt-bse', 'bse', 'b'], ['opt-msm', 'msm', 'b'], ['opt-gye', 'gye', 'b'], ['opt-ctr', 'ctr', 'b'], ['opt-pay', 'pay', 'b'], ['opt-mpl', 'mpl', 'b'], ['opt-jpt', 'jpt', 'b'], ['opt-prp', 'prp', 'b'], ['opt-thm', 'thm', 'b'], ['opt-ivp', 'ivp', 'b'], ['opt-chl', 'chl', 'b'], ['opt-chn', 'chn', 'b'], ['opt-chs', 'chs', 'b'], ['opt-chw', 'chw', 's'], ['opt-cht', 'cht', 'b'], ['opt-chr', 'chr', 'b'], ['opt-cha', 'cha', 'b'], ['opt-ctt', 'ctt', 'b'], ['opt-cttsec', 'cttSec', 'n'], ['opt-stkm', 'stkm', 'b'], ['opt-abs', 'abs', 'b'], ['opt-spk', 'spk', 'b'], ['opt-ldo', 'ldo', 'b']];
-  function T(tr, en) { return LS.getItem('torn-lang-v1') === 'en' ? en : tr; }
+  function curLang() { return LS.getItem('torn-lang-v1') === 'tr' ? 'tr' : 'en'; }
+  function T(tr, en) { return curLang() === 'en' ? en : tr; }
   var actx = null;
   function audioUnlock() {
     try { var C = window.AudioContext || window.webkitAudioContext; if (!C) return; if (!actx) actx = new C(); if (actx.state === 'suspended') actx.resume(); } catch (e) {}
@@ -4435,7 +4436,7 @@
       });
     }
     gysStatInject(GYS.filter(function (g) { return sel.indexOf(g.k) >= 0; }), st);
-    var sig = JSON.stringify([st, sel, (LS.getItem('torn-lang-v1') || '')]);
+    var sig = JSON.stringify([st, sel, curLang()]);
     if (sig === gysSig) return;
     gysSig = sig;
     var h = '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">' + T('Uzman gym hedefleri', 'Specialist gym targets') + '</div><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-bottom:8px;">';
@@ -5215,7 +5216,7 @@
     pn.innerHTML = h;
     box.parentNode.insertBefore(pn, box.nextSibling);
   }
-  function lang0() { try { return LS.getItem('torn-lang-v1') || ''; } catch (e) { return ''; } }
+  function lang0() { try { return curLang(); } catch (e) { return 'en'; } }
   setInterval(bseTick, 1500);
   /* Şirket çalışanları: tek tuşla herkesi eğit */
   var ctrBusy = false;
@@ -6083,7 +6084,7 @@
     var ex = document.getElementById('th-thm-a');
     if (!ui.thm) { if (ex) ex.remove(); var pp = document.getElementById('th-thm-pn'); if (pp) pp.remove(); return; }
     var pn = document.getElementById('th-thm-pn'); if (pn && !pn.getAttribute('data-d') && thmItems() && pn.querySelector('.th-thm-l').childNodes.length <= 1 && !pn.querySelector('[data-first]')) thmRender();
-    if (ex) return;
+    if (ex) { var l2 = T('Hızlı Market', 'Quick Market'); if (ex.textContent !== l2) { ex.textContent = l2; ex.title = T('Item Market hızlı arama', 'Item Market quick search'); } return; }
     hdrBtn('th-thm-a', T('Hızlı Market', 'Quick Market'), T('Item Market hızlı arama', 'Item Market quick search'), thmToggle);
   }
   setInterval(thmTick, 1500);
@@ -6220,7 +6221,7 @@
   function chsTick() {
     var ex = document.getElementById('th-chs-a');
     if (!ui.chs) { if (ex) ex.remove(); var pp = document.getElementById('th-chs-pn'); if (pp) pp.remove(); return; }
-    if (ex) return;
+    if (ex) { var l1 = T('SohbetAra', 'ChatSearch'); if (ex.textContent !== l1) { ex.textContent = l1; ex.title = T('Sohbet mesajlarında ara', 'Search chat messages'); } return; }
     hdrBtn('th-chs-a', T('SohbetAra', 'ChatSearch'), T('Sohbet mesajlarında ara', 'Search chat messages'), chsToggle);
   }
   setInterval(chsTick, 1500);
@@ -6749,7 +6750,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.07';
+  var TH_VER = '1.7.08';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6850,6 +6851,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.08', 'o', ['Varsayilan dil Ingilizce oldu (yeni kurulumlarda); dil degisince ustteki sari dugmeler (Hizli Market, SohbetAra, Sohbeti gizle) de aninda yeni dile geciyor. Mevcut kullanicilarin secili dili degismez.'], ['Default language is now English on new installs; the yellow top buttons (Quick Market, ChatSearch, Hide chat) now switch language immediately. Existing users keep their chosen language.']],
     ['1.7.07', 'o', ['Sirket Stock Shipments: Otomatik siparis kutusuna Satilan kadar al dugmesi eklendi; her urune gunluk satis (Sold Daily) adedi kadar siparis yazar.'], ['Company Stock Shipments: added a Buy sold amount button to the Auto order box; it enters the Sold Daily amount for every item.']],
     ['1.7.06', 'o', ['Sirket Hepsini egit: ayni calisana tekrar tekrar egitim gondermesi duzeltildi; her calisan bir tur icinde en fazla bir kez egitilir.'], ['Company Train all: fixed it sending repeated trains to the same employee; each employee is trained at most once per run.']],
     ['1.7.05', 'o', ['Ust cubuktaki Hizli Market / SohbetAra / Sohbeti gizle dugmeleri Torn ogeleriyle (ornegin Opera gibi dar pencerelerde ust simgeler) cakisirsa otomatik asagi kayar; ayrica soldaki tutamactan surukleyip istedigin yere tasiyabilirsin (konum hatirlanir, cift tik sifirlar).'], ['The Quick Market / ChatSearch / Hide chat buttons now move down automatically when they would cover Torn elements (for example the top icons in narrow windows such as Opera); you can also drag them with the left handle (position is remembered, double-click resets).']],
@@ -7450,7 +7452,7 @@
     var go = root.getElementById('x-ret-go');
     var ff = t.top.ff, rc = ff == null ? '#5f6b7a' : ff <= 2 ? '#3b82f6' : ff <= 3.5 ? '#eab308' : ff <= 4.5 ? '#f97316' : '#ef4444';
     box.style.setProperty('--rc', rc); box.style.setProperty('--rt', ff != null && ff > 2 && ff <= 3.5 ? '#1a1a1a' : '#fff');
-    go.textContent = 'Retal: ' + t.top.an + (ff != null ? ' · FF ' + ff.toFixed(2) : (t.top.fft ? ' · FF ?' : '')) + ' · ' + Math.max(1, Math.round((Date.now() - t.top.at) / 60000)) + (LS.getItem('torn-lang-v1') === 'en' ? ' min' : ' dk') + (t.n > 1 ? ' +' + (t.n - 1) : '');
+    go.textContent = 'Retal: ' + t.top.an + (ff != null ? ' · FF ' + ff.toFixed(2) : (t.top.fft ? ' · FF ?' : '')) + ' · ' + Math.max(1, Math.round((Date.now() - t.top.at) / 60000)) + (curLang() === 'en' ? ' min' : ' dk') + (t.n > 1 ? ' +' + (t.n - 1) : '');
     go.title = (t.top.vn ? t.top.vn + ' · ' : '') + (t.top.lvl ? 'Lv ' + t.top.lvl : '');
     var r = openBtn.getBoundingClientRect(), h = box.offsetHeight || 30;
     var top = r.bottom + 6;
