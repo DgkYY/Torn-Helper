@@ -1727,7 +1727,7 @@
     var pill = function (k, v, rdy) { return '<span class="pill' + (rdy ? ' rdy' : '') + '"><span class="k">' + esc(k) + '</span> <b>' + v + '</b></span>'; };
     ['energy', 'nerve'].forEach(function (k) {
       var o = me.bars && me.bars[k];
-      if (o && typeof o === 'object') h += pill(BAR_TR[k], esc(o.current) + ' / ' + esc(o.maximum), Number(o.current) >= Number(o.maximum));
+      if (o && typeof o === 'object') h += pill(barNm(k), esc(o.current) + ' / ' + esc(o.maximum), Number(o.current) >= Number(o.maximum));
     });
     Object.keys(me.cds || {}).forEach(function (k) {
       if (!CD_TR[k]) return;
@@ -2548,6 +2548,7 @@
     renderMe();
   }
   var BAR_TR = { energy: 'Enerji', nerve: 'Nerve', happy: 'Mutluluk', life: 'Can' };
+  function barNm(k) { return lang === 'en' ? ({ energy: 'Energy', nerve: 'Nerve', happy: 'Happy', life: 'Life' })[k] : BAR_TR[k]; }
   var CD_TR = { drug: 'İlaç (drug)', medical: 'Tıbbi', booster: 'Booster' };
   var MONEY_TR = { wallet: 'Cüzdan', vault: 'Mülk kasası', points: 'Puan', cayman_bank: 'Cayman', company: 'Şirket', daily_networth: 'Günlük networth' };
   function cdText(end) { var l = Math.ceil((end - Date.now()) / 1000); return l > 0 ? fmtCd(l) : 'Hazır'; }
@@ -2559,7 +2560,7 @@
       h += '<div class="fcard"><h3>Barlar</h3>' + bk.map(function (k) {
         var o = me.bars[k], ft = Number(o.full_time), end = '';
         if (isFinite(ft) && ft > 0) end = ft > 1e9 ? ft * 1000 : me.at + ft * 1000;
-        return '<div class="frow"><span class="nm">' + BAR_TR[k] + '</span><span class="big">' + esc(o.current) + ' / ' + esc(o.maximum) + '</span>' + (end ? '<span class="dim">dolmasına <b class="cdt" data-end="' + end + '">' + cdText(end) + '</b></span>' : '') + '</div>';
+        return '<div class="frow"><span class="nm">' + barNm(k) + '</span><span class="big">' + esc(o.current) + ' / ' + esc(o.maximum) + '</span>' + (end ? '<span class="dim">dolmasına <b class="cdt" data-end="' + end + '">' + cdText(end) + '</b></span>' : '') + '</div>';
       }).join('') + '</div>';
     }
     var ck = Object.keys(me.cds);
@@ -6879,7 +6880,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
-    ['1.7.11', 'o', ['Ingilizce arayuzde Paylasim dugmesi ve kayit sayilari satirinin Turkce kalmasi duzeltildi.'], ['Fixed the Sharing button and the records line staying in Turkish in the English UI.']],
+    ['1.7.11', 'o', ['Ingilizce arayuzde Paylasim dugmesi, kayit sayilari satiri, ust cubuktaki Enerji/Mutluluk/Can etiketleri ve enerji noktasi ipucu Turkce kaliyordu, duzeltildi.'], ['Fixed the Sharing button, the records line, the top-bar Energy/Happy/Life labels and the energy-dot tooltip staying in Turkish in the English UI.']],
     ['1.7.10', 'o', ['Telefon / Torn PDA: ust sari dugmeler dar ekranda tek bir TH dugmesinin arkasina saklandi (basinca acilir, secince kapanir); sayfa metnini ortmuyor.'], ['Phone / Torn PDA: on narrow screens the yellow top buttons are tucked behind a single TH button (tap to open, closes after a choice) so they no longer cover page text.']],
     ['1.7.09', 'o', ['Telefon / Torn PDA: Hizli Market ve SohbetAra pencereleri artik ustteki sari dugmelerin altinda aciliyor ve dugmeleri ortmuyor.'], ['Phone / Torn PDA: the Quick Market and ChatSearch windows now open below the yellow top buttons instead of covering them.']],
     ['1.7.08', 'o', ['Varsayilan dil Ingilizce oldu (yeni kurulumlarda); dil degisince ustteki sari dugmeler (Hizli Market, SohbetAra, Sohbeti gizle) de aninda yeni dile geciyor. Mevcut kullanicilarin secili dili degismez.'], ['Default language is now English on new installs; the yellow top buttons (Quick Market, ChatSearch, Hide chat) now switch language immediately. Existing users keep their chosen language.']],
