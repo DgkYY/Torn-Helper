@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.08
+// @version      1.7.09
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.08', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.09', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6059,8 +6059,20 @@
     return false;
   }
   var hdrSig = '';
+  function hdrPanels() {
+    var bx = document.getElementById('th-hdr'), ids = ['th-thm-pn', 'th-chs-pn'], i; if (!bx) return;
+    var r = bx.getBoundingClientRect(), top = Math.round(r.bottom + 6), pn;
+    for (i = 0; i < ids.length; i++) {
+      pn = document.getElementById(ids[i]); if (!pn) continue;
+      var rr = bx.getBoundingClientRect(), left = Math.max(8, Math.min(window.innerWidth - pn.offsetWidth - 8, rr.right - pn.offsetWidth));
+      if (pn.style.top !== top + 'px') pn.style.top = top + 'px';
+      pn.style.right = 'auto'; pn.style.left = left + 'px';
+      pn.style.maxHeight = Math.max(120, window.innerHeight - top - 12) + 'px'; pn.style.overflowY = 'auto';
+    }
+  }
   function hdrPlace() {
     var bx = document.getElementById('th-hdr'); if (!bx || !bx.firstChild) return;
+    hdrPanels();
     var sp = gmGet('hdr-pos', null), r = bx.getBoundingClientRect(); if (!r.width) return;
     if (sp && typeof sp.x === 'number' && typeof sp.y === 'number') {
       var x = Math.max(0, Math.min(window.innerWidth - r.width, sp.x)), y = Math.max(0, Math.min(window.innerHeight - r.height, sp.y));
@@ -6073,7 +6085,7 @@
     for (y2 = 4; y2 <= 200; y2 += 4) { if (!hdrHit(bx, r, y2)) { best = y2; break; } }
     bx.style.top = best + 'px'; hdrSig = window.innerWidth + 'x' + window.innerHeight + ':' + Math.round(r.width) + ':' + bx.style.top;
   }
-  setInterval(hdrPlace, 1500); window.addEventListener('resize', function () { hdrSig = ''; hdrPlace(); });
+  setInterval(hdrPlace, 1500); setInterval(hdrPanels, 400); window.addEventListener('resize', function () { hdrSig = ''; hdrPlace(); });
   function hdrBtn(id, label, title, fn) {
     var bx = hdrBox(); if (!bx) return;
     var a = document.createElement('a'); a.id = id; a.href = '#'; a.textContent = label; a.title = title;
@@ -6750,7 +6762,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.08';
+  var TH_VER = '1.7.09';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6851,6 +6863,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.09', 'o', ['Telefon / Torn PDA: Hizli Market ve SohbetAra pencereleri artik ustteki sari dugmelerin altinda aciliyor ve dugmeleri ortmuyor.'], ['Phone / Torn PDA: the Quick Market and ChatSearch windows now open below the yellow top buttons instead of covering them.']],
     ['1.7.08', 'o', ['Varsayilan dil Ingilizce oldu (yeni kurulumlarda); dil degisince ustteki sari dugmeler (Hizli Market, SohbetAra, Sohbeti gizle) de aninda yeni dile geciyor. Mevcut kullanicilarin secili dili degismez.'], ['Default language is now English on new installs; the yellow top buttons (Quick Market, ChatSearch, Hide chat) now switch language immediately. Existing users keep their chosen language.']],
     ['1.7.07', 'o', ['Sirket Stock Shipments: Otomatik siparis kutusuna Satilan kadar al dugmesi eklendi; her urune gunluk satis (Sold Daily) adedi kadar siparis yazar.'], ['Company Stock Shipments: added a Buy sold amount button to the Auto order box; it enters the Sold Daily amount for every item.']],
     ['1.7.06', 'o', ['Sirket Hepsini egit: ayni calisana tekrar tekrar egitim gondermesi duzeltildi; her calisan bir tur icinde en fazla bir kez egitilir.'], ['Company Train all: fixed it sending repeated trains to the same employee; each employee is trained at most once per run.']],
