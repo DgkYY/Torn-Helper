@@ -2,7 +2,7 @@
 // @name         Torn-Helper
 // @namespace    torn-hedef-araci
 // @author       DgkYY
-// @version      1.7.09
+// @version      1.7.10
 // @description  Torn için hedef listesi, Ranked War, faction yönetimi ve yurtdışı fiyat karşılaştırma paneli
 // @homepageURL  https://github.com/DgkYY/Torn-Helper
 // @supportURL   https://github.com/DgkYY/Torn-Helper/issues
@@ -3024,7 +3024,7 @@
   }
 
   /* ---------- hata bildir ---------- */
-  var APP_VERSION = '1.7.09', REPO = 'DgkYY/Torn-Helper';
+  var APP_VERSION = '1.7.10', REPO = 'DgkYY/Torn-Helper';
   function maskKeys(t) { return String(t || '').replace(/\b[A-Za-z0-9]{16}\b/g, '[key]').replace(/(key=)[^&\s"']+/gi, '$1[key]'); }
   function bugReport() {
     var msgs = [], ms = UIROOT.querySelectorAll('.msg');
@@ -6043,6 +6043,11 @@
       });
       gr.addEventListener('dblclick', function () { gmSet('hdr-pos', null); bx.removeAttribute('data-x'); bx.removeAttribute('data-y'); hdrPlace(); });
       bx.appendChild(gr);
+      var tg = document.createElement('a'); tg.id = 'th-hdr-t'; tg.href = '#'; tg.textContent = 'TH ▾'; tg.title = T('Torn-Helper düğmelerini aç / kapat', 'Show / hide the Torn-Helper buttons');
+      tg.style.cssText = 'display:none;padding:2px 8px;color:#fbbf24;background:rgba(17,17,17,.85);border:1px solid #fbbf24;border-radius:4px;text-decoration:none;line-height:16px;';
+      tg.addEventListener('click', function (e) { e.preventDefault(); hdrExp = !hdrExp; hdrNarrow(); hdrPanels(); });
+      bx.appendChild(tg);
+      bx.addEventListener('click', function (e) { var a = e.target && e.target.closest ? e.target.closest('a') : null; if (hdrIsNarrow() && a && a.id !== 'th-hdr-t') setTimeout(function () { hdrExp = false; hdrNarrow(); }, 60); });
       document.body.appendChild(bx);
     }
     return bx;
@@ -6058,7 +6063,15 @@
     }
     return false;
   }
-  var hdrSig = '';
+  var hdrSig = '', hdrExp = false;
+  function hdrIsNarrow() { return Math.min(window.innerWidth, (window.screen && window.screen.width) || 9999) <= 600; }
+  /* Dar ekranda (telefon / PDA) sari dugmeler tek bir TH dugmesinin arkasina saklanir, sayfa metnini ortmesin */
+  function hdrNarrow() {
+    var bx = document.getElementById('th-hdr'); if (!bx) return;
+    var nar = hdrIsNarrow(), tg = bx.querySelector('#th-hdr-t'), as = bx.querySelectorAll('a'), i, hide = nar && !hdrExp;
+    if (tg) { tg.style.display = nar ? '' : 'none'; var tx = hdrExp ? 'TH ▴' : 'TH ▾'; if (tg.textContent !== tx) tg.textContent = tx; }
+    for (i = 0; i < as.length; i++) { if (as[i].id === 'th-hdr-t') continue; if ((as[i].style.display === 'none') !== hide) as[i].style.display = hide ? 'none' : ''; }
+  }
   function hdrPanels() {
     var bx = document.getElementById('th-hdr'), ids = ['th-thm-pn', 'th-chs-pn'], i; if (!bx) return;
     var r = bx.getBoundingClientRect(), top = Math.round(r.bottom + 6), pn;
@@ -6072,7 +6085,7 @@
   }
   function hdrPlace() {
     var bx = document.getElementById('th-hdr'); if (!bx || !bx.firstChild) return;
-    hdrPanels();
+    hdrNarrow(); hdrPanels();
     var sp = gmGet('hdr-pos', null), r = bx.getBoundingClientRect(); if (!r.width) return;
     if (sp && typeof sp.x === 'number' && typeof sp.y === 'number') {
       var x = Math.max(0, Math.min(window.innerWidth - r.width, sp.x)), y = Math.max(0, Math.min(window.innerHeight - r.height, sp.y));
@@ -6762,7 +6775,7 @@
   setInterval(cstTick, 1000);
 
   /* Güncelleme notları: sürüm değişince atlanan tüm sürümleri sırayla göster */
-  var TH_VER = '1.7.09';
+  var TH_VER = '1.7.10';
   var PN_LOC = { o: ['Ayarlar › Diğer sayfalar', 'Settings › Other pages'], s: ['Ayarlar › Kenar çubuğu', 'Settings › Sidebar'], b: ['Ayarlar › Bildirimler', 'Settings › Notifications'], n: ['Ayarı yok, otomatik çalışır', 'No setting, works automatically'] };
   var CHANGES = [
     ['1.5.86', 'o', ['NPC mağazalarında Shop Analyzer: piyasa fiyatı ve tahmini kâr.'], ['Shop Analyzer in NPC shops: market price and estimated profit.']],
@@ -6863,6 +6876,7 @@
     ['1.6.77', 'n', ['Merit takibi: Go to hospital N times ödülü için hastaneye düşme sayısı okunuyor.'], ['Merit tracker: the hospital visits count is now read for the Go to hospital N times award.']],
     ['1.6.78', 'o', ['Ayarlara teçhizat kayıtları eklendi: bu cihazdaki rakip teçhizat kayıtlarını JSON olarak kopyalayabilir veya temizleyebilirsin (ileride ortak veri için hazırlık).'], ['Settings now has loadout records: copy the opponent loadouts saved on this device as JSON or clear them (preparation for shared data later).']],
     ['1.6.79', 'n', ['Teçhizat kaydına saldırı sonucu, kazanılan respect ve (API ile) rakip seviyesi eklendi. Merit takibinde Win N attacks ödülü için eşleştirme kuralı düzeltildi. Saldırı sayfasındaki zincir sayısı da kaydediliyor.'], ['Loadout records now also keep the attack result, respect gained and (via API) the opponent level. Fixed the matching rule for the Win N attacks merit. The chain count shown on the attack page is saved too.']],
+    ['1.7.10', 'o', ['Telefon / Torn PDA: ust sari dugmeler dar ekranda tek bir TH dugmesinin arkasina saklandi (basinca acilir, secince kapanir); sayfa metnini ortmuyor.'], ['Phone / Torn PDA: on narrow screens the yellow top buttons are tucked behind a single TH button (tap to open, closes after a choice) so they no longer cover page text.']],
     ['1.7.09', 'o', ['Telefon / Torn PDA: Hizli Market ve SohbetAra pencereleri artik ustteki sari dugmelerin altinda aciliyor ve dugmeleri ortmuyor.'], ['Phone / Torn PDA: the Quick Market and ChatSearch windows now open below the yellow top buttons instead of covering them.']],
     ['1.7.08', 'o', ['Varsayilan dil Ingilizce oldu (yeni kurulumlarda); dil degisince ustteki sari dugmeler (Hizli Market, SohbetAra, Sohbeti gizle) de aninda yeni dile geciyor. Mevcut kullanicilarin secili dili degismez.'], ['Default language is now English on new installs; the yellow top buttons (Quick Market, ChatSearch, Hide chat) now switch language immediately. Existing users keep their chosen language.']],
     ['1.7.07', 'o', ['Sirket Stock Shipments: Otomatik siparis kutusuna Satilan kadar al dugmesi eklendi; her urune gunluk satis (Sold Daily) adedi kadar siparis yazar.'], ['Company Stock Shipments: added a Buy sold amount button to the Auto order box; it enters the Sold Daily amount for every item.']],
